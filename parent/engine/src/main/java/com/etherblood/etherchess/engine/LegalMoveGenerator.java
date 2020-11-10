@@ -51,19 +51,15 @@ public class LegalMoveGenerator {
         }
 
         long pinnedMask = 0;
-        {
-            //pin calculations
-            pinnedMask |= handlePinnedMoves(state, Direction.NORTH, state.rooks() | state.queens(), pushMask, captureMask, out);
-            pinnedMask |= handlePinnedMoves(state, Direction.EAST, state.rooks() | state.queens(), pushMask, captureMask, out);
-            pinnedMask |= handlePinnedMoves(state, Direction.SOUTH, state.rooks() | state.queens(), pushMask, captureMask, out);
-            pinnedMask |= handlePinnedMoves(state, Direction.WEST, state.rooks() | state.queens(), pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.NORTH, state.rooks() | state.queens(), pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.EAST, state.rooks() | state.queens(), pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH, state.rooks() | state.queens(), pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.WEST, state.rooks() | state.queens(), pushMask, captureMask, out);
 
-            pinnedMask |= handlePinnedMoves(state, Direction.NORTH_EAST, state.bishops() | state.queens(), pushMask, captureMask, out);
-            pinnedMask |= handlePinnedMoves(state, Direction.SOUTH_EAST, state.bishops() | state.queens(), pushMask, captureMask, out);
-            pinnedMask |= handlePinnedMoves(state, Direction.SOUTH_WEST, state.bishops() | state.queens(), pushMask, captureMask, out);
-            pinnedMask |= handlePinnedMoves(state, Direction.NORTH_WEST, state.bishops() | state.queens(), pushMask, captureMask, out);
-
-        }
+        pinnedMask |= handlePinnedMoves(state, Direction.NORTH_EAST, state.bishops() | state.queens(), pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH_EAST, state.bishops() | state.queens(), pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH_WEST, state.bishops() | state.queens(), pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.NORTH_WEST, state.bishops() | state.queens(), pushMask, captureMask, out);
 
         pawnMoves(state, state.pawns() & state.own() & ~pinnedMask, pushMask, captureMask, out);
         knightMoves(state, state.knights() & state.own() & ~pinnedMask, pushMask, captureMask, out);
@@ -73,47 +69,43 @@ public class LegalMoveGenerator {
     }
 
     private long kingDangerSquares(State state) {
-        long kingDangerSquares;
-        {
-            long ownKingless = state.own() & ~state.kings();
-            long occupiedOwnKingExcluded = state.opp() | ownKingless;
-            long result = 0;
-            long pawns = state.pawns() & state.opp();
-            result |= (pawns >>> 7) & ~SquareSet.FILE_A;
-            result |= (pawns >>> 9) & ~SquareSet.FILE_H;
-            long queens = state.queens() & state.opp();
-            while (queens != 0) {
-                int from = Square.firstOf(queens);
-                result |= PieceSquareSet.queenRays(from, occupiedOwnKingExcluded);
-                queens ^= SquareSet.of(from);
-            }
-            long rooks = state.rooks() & state.opp();
-            while (rooks != 0) {
-                int from = Square.firstOf(rooks);
-                result |= PieceSquareSet.rookRays(from, occupiedOwnKingExcluded);
-                rooks ^= SquareSet.of(from);
-            }
-            long bishops = state.bishops() & state.opp();
-            while (bishops != 0) {
-                int from = Square.firstOf(bishops);
-                result |= PieceSquareSet.bishopRays(from, occupiedOwnKingExcluded);
-                bishops ^= SquareSet.of(from);
-            }
-            long knights = state.knights() & state.opp();
-            while (knights != 0) {
-                int from = Square.firstOf(knights);
-                result |= PieceSquareSet.knightMoves(from);
-                knights ^= SquareSet.of(from);
-            }
-            long kings = state.kings() & state.opp();
-            while (kings != 0) {
-                int from = Square.firstOf(kings);
-                result |= PieceSquareSet.kingMoves(from);
-                kings ^= SquareSet.of(from);
-            }
-            kingDangerSquares = result;
+        long ownKingless = state.own() & ~state.kings();
+        long occupiedOwnKingExcluded = state.opp() | ownKingless;
+        long result = 0;
+        long pawns = state.pawns() & state.opp();
+        result |= (pawns >>> 7) & ~SquareSet.FILE_A;
+        result |= (pawns >>> 9) & ~SquareSet.FILE_H;
+        long queens = state.queens() & state.opp();
+        while (queens != 0) {
+            int from = Square.firstOf(queens);
+            result |= PieceSquareSet.queenRays(from, occupiedOwnKingExcluded);
+            queens ^= SquareSet.of(from);
         }
-        return kingDangerSquares;
+        long rooks = state.rooks() & state.opp();
+        while (rooks != 0) {
+            int from = Square.firstOf(rooks);
+            result |= PieceSquareSet.rookRays(from, occupiedOwnKingExcluded);
+            rooks ^= SquareSet.of(from);
+        }
+        long bishops = state.bishops() & state.opp();
+        while (bishops != 0) {
+            int from = Square.firstOf(bishops);
+            result |= PieceSquareSet.bishopRays(from, occupiedOwnKingExcluded);
+            bishops ^= SquareSet.of(from);
+        }
+        long knights = state.knights() & state.opp();
+        while (knights != 0) {
+            int from = Square.firstOf(knights);
+            result |= PieceSquareSet.knightMoves(from);
+            knights ^= SquareSet.of(from);
+        }
+        long kings = state.kings() & state.opp();
+        while (kings != 0) {
+            int from = Square.firstOf(kings);
+            result |= PieceSquareSet.kingMoves(from);
+            kings ^= SquareSet.of(from);
+        }
+        return result;
     }
 
     public long findOwnCheckers(State state) {
