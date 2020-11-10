@@ -6,10 +6,15 @@ public class PieceSquareSet {
     private static final long[] KNIGHT_ATTACKS = new long[64];
     private static final long[] SQUARES_BETWEEN = new long[64 * 64];
 
+    private static final long[] KING_DANGER_ROOKS_MASK = new long[64];
+    private static final long[] KING_DANGER_BISHOPS_MASK = new long[64];
+    private static final long[] KING_DANGER_KNIGHTS_MASK = new long[64];
+
     static {
         precomputeKingAttacks();
         precomputeKnightAttacks();
         precomputeRaySquaresBetween();
+        precomputeKingDangerMasks();
     }
 
     private static void precomputeRaySquaresBetween() {
@@ -67,12 +72,43 @@ public class PieceSquareSet {
         }
     }
 
+    private static void precomputeKingDangerMasks() {
+        // slider masks could further be split by direction
+        for (int kingSquare = 0; kingSquare < 64; kingSquare++) {
+            long kingZone = KING_ATTACKS[kingSquare] | SquareSet.of(kingSquare);
+            if (kingSquare == Square.E1) {
+                kingZone |= SquareSet.C1 | SquareSet.G1;
+            }
+
+            while (kingZone != 0) {
+                int dangerSquare = Square.firstOf(kingZone);
+                KING_DANGER_ROOKS_MASK[kingSquare] |= SquareSet.rankOf(dangerSquare) | SquareSet.fileOf(dangerSquare);
+                KING_DANGER_BISHOPS_MASK[kingSquare] |= SquareSet.diagonalOf(dangerSquare) | SquareSet.antiDiagonalOf(dangerSquare);
+                KING_DANGER_KNIGHTS_MASK[kingSquare] |= knightMoves(dangerSquare);
+
+                kingZone = SquareSet.clearFirst(kingZone);
+            }
+        }
+    }
+
     public static long kingMoves(int from) {
         return KING_ATTACKS[from];
     }
 
     public static long knightMoves(int from) {
         return KNIGHT_ATTACKS[from];
+    }
+
+    public static long kingDangerRooksMask(int kingSquare) {
+        return KING_DANGER_ROOKS_MASK[kingSquare];
+    }
+
+    public static long kingDangerBishopsMask(int kingSquare) {
+        return KING_DANGER_BISHOPS_MASK[kingSquare];
+    }
+
+    public static long kingDangerKnightsMask(int kingSquare) {
+        return KING_DANGER_KNIGHTS_MASK[kingSquare];
     }
 
     public static long queenRays(int from, long occupied) {
@@ -94,7 +130,7 @@ public class PieceSquareSet {
     }
 
     public static long southEastRay(int square, long occupied) {
-        return SquareSet.mirrorY(northWestRay(Square.mirrorY(square), SquareSet.mirrorY(occupied)));
+        return SquareSet.reverse(northWestRay(Square.reverse(square), SquareSet.reverse(occupied)));
     }
 
     public static long northWestRay(int square, long occupied) {
@@ -102,7 +138,7 @@ public class PieceSquareSet {
     }
 
     public static long southWestRay(int square, long occupied) {
-        return SquareSet.mirrorY(northEastRay(Square.mirrorY(square), SquareSet.mirrorY(occupied)));
+        return SquareSet.reverse(northEastRay(Square.reverse(square), SquareSet.reverse(occupied)));
     }
 
     public static long northEastRay(int square, long occupied) {
@@ -110,7 +146,6 @@ public class PieceSquareSet {
     }
 
     public static long westRay(int square, long occupied) {
-        //TODO: only mirrorX required, reverse is overkill
         return SquareSet.reverse(eastRay(Square.reverse(square), SquareSet.reverse(occupied)));
     }
 
@@ -119,7 +154,7 @@ public class PieceSquareSet {
     }
 
     public static long southRay(int square, long occupied) {
-        return SquareSet.mirrorY(northRay(Square.mirrorY(square), SquareSet.mirrorY(occupied)));
+        return SquareSet.reverse(northRay(Square.reverse(square), SquareSet.reverse(occupied)));
     }
 
     public static long northRay(int square, long occupied) {
@@ -135,7 +170,7 @@ public class PieceSquareSet {
     }
 
     public static long directionRay(int direction, int square, long occupied) {
-        Direction.assertValid(direction);
+        assert Direction.assertValid(direction);
         switch (direction) {
             case Direction.NORTH:
                 return northRay(square, occupied);

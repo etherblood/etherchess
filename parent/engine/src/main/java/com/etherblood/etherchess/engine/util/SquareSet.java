@@ -96,28 +96,53 @@ public class SquareSet {
 
     public static final long OUTER = FILE_A | FILE_H | RANK_1 | RANK_8;
     public static final long INNER = ~OUTER;
+    public static final long MAIN_DIAGONAL = 0x8040201008040201L;
+    public static final long MAIN_ANTIDIAGONAL = 0x102040810204080L;
 
     private static final long[] DIAGONAL = new long[64];
     private static final long[] ANTIDIAGONAL = new long[64];
 
+    private static final long[] NORTH_RAY = new long[64];
+    private static final long[] NORTHEAST_RAY = new long[64];
+    private static final long[] EAST_RAY = new long[64];
+    private static final long[] SOUTHEAST_RAY = new long[64];
+    private static final long[] SOUTH_RAY = new long[64];
+    private static final long[] SOUTHWEST_RAY = new long[64];
+    private static final long[] WEST_RAY = new long[64];
+    private static final long[] NORTHWEST_RAY = new long[64];
+
     static {
         precomputeDiagonals();
+        precomputeRays();
     }
 
     private static void precomputeDiagonals() {
-        long diA1 = 0;
-        for (int i = 0; i < 8; i++) {
-            diA1 |= SquareSet.of(Square.square(i, i));
-        }
         for (int square = 0; square < 64; square++) {
             int x = Square.x(square);
             int y = Square.y(square);
             if (y >= x) {
-                DIAGONAL[square] = diA1 << (8 * (y - x));
+                DIAGONAL[square] = MAIN_DIAGONAL << (8 * (y - x));
             } else {
-                DIAGONAL[square] = diA1 >>> (8 * (x - y));
+                DIAGONAL[square] = MAIN_DIAGONAL >>> (8 * (x - y));
             }
             ANTIDIAGONAL[Square.mirrorY(square)] = SquareSet.mirrorY(DIAGONAL[square]);
+        }
+    }
+
+    private static void precomputeRays() {
+        // skip last square in loop, it is empty
+        for (int square = 0; square < 63; square++) {
+            NORTHWEST_RAY[square] = antiDiagonalOf(square) & (of(square + 1) * full());
+            NORTH_RAY[square] = fileOf(square) & (of(square + 1) * full());
+            NORTHEAST_RAY[square] = diagonalOf(square) & (of(square + 1) * full());
+            EAST_RAY[square] = rankOf(square) & (of(square + 1) * full());
+        }
+        for (int square = 0; square < 64; square++) {
+            int reversedSquare = Square.reverse(square);
+            SOUTHEAST_RAY[square] = reverse(NORTHWEST_RAY[reversedSquare]);
+            SOUTH_RAY[square] = reverse(NORTH_RAY[reversedSquare]);
+            SOUTHWEST_RAY[square] = reverse(NORTHEAST_RAY[reversedSquare]);
+            WEST_RAY[square] = reverse(EAST_RAY[reversedSquare]);
         }
     }
 
@@ -140,6 +165,12 @@ public class SquareSet {
             long file = Long.divideUnsigned(~0L, 0xffL) << x;
             System.out.println("public static final long FILE_" + (char) ('A' + x) + " = 0x" + Long.toHexString(file) + "L;");
         }
+        long mainDiagonal = 0;
+        for (int i = 0; i < 8; i++) {
+            mainDiagonal |= of(Square.square(i, i));
+        }
+        System.out.println("public static final long MAIN_DIAGONAL = 0x" + Long.toHexString(mainDiagonal) + "L;");
+        System.out.println("public static final long MAIN_ANTIDIAGONAL = 0x" + Long.toHexString(mirrorY(mainDiagonal)) + "L;");
         System.out.println();
     }
 
@@ -158,6 +189,10 @@ public class SquareSet {
 
     public static long firstOf(long squareSet) {
         return Long.lowestOneBit(squareSet);
+    }
+
+    public static long clearFirst(long squareSet) {
+        return squareSet & (squareSet - 1);
     }
 
     public static long lastOf(long squareSet) {
@@ -207,47 +242,39 @@ public class SquareSet {
     }
 
     public static long simpleNorthRay(int square) {
-        //TODO: use faster algorith or table lookup
-        return PieceSquareSet.northRay(square, 0);
+        return NORTH_RAY[square];
     }
 
     public static long simpleSouthRay(int square) {
-        //TODO: use faster algorith or table lookup
-        return PieceSquareSet.southRay(square, 0);
+        return SOUTH_RAY[square];
     }
 
     public static long simpleWestRay(int square) {
-        //TODO: use faster algorith or table lookup
-        return PieceSquareSet.westRay(square, 0);
+        return WEST_RAY[square];
     }
 
     public static long simpleEastRay(int square) {
-        //TODO: use faster algorith or table lookup
-        return PieceSquareSet.eastRay(square, 0);
+        return EAST_RAY[square];
     }
 
     public static long simpleNorthWestRay(int square) {
-        //TODO: use faster algorith or table lookup
-        return PieceSquareSet.northWestRay(square, 0);
+        return NORTHWEST_RAY[square];
     }
 
     public static long simpleNorthEastRay(int square) {
-        //TODO: use faster algorith or table lookup
-        return PieceSquareSet.northEastRay(square, 0);
+        return NORTHEAST_RAY[square];
     }
 
     public static long simpleSouthWestRay(int square) {
-        //TODO: use faster algorith or table lookup
-        return PieceSquareSet.southWestRay(square, 0);
+        return SOUTHWEST_RAY[square];
     }
 
     public static long simpleSouthEastRay(int square) {
-        //TODO: use faster algorith or table lookup
-        return PieceSquareSet.southEastRay(square, 0);
+        return SOUTHEAST_RAY[square];
     }
 
     public static long simpleDirectionRay(int direction, int square) {
-        Direction.assertValid(direction);
+        assert Direction.assertValid(direction);
         switch (direction) {
             case Direction.NORTH:
                 return simpleNorthRay(square);

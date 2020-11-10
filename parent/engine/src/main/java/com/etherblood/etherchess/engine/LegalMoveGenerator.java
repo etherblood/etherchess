@@ -69,42 +69,34 @@ public class LegalMoveGenerator {
     }
 
     private long kingDangerSquares(State state) {
-        long ownKingless = state.own() & ~state.kings();
-        long occupiedOwnKingExcluded = state.opp() | ownKingless;
+        long ownKings = state.own() & state.kings();
+        int ownKingSquare = Square.firstOf(ownKings);
+        long occupiedOwnKingExcluded = state.occupied() ^ ownKings;
         long result = 0;
         long pawns = state.pawns() & state.opp();
         result |= (pawns >>> 7) & ~SquareSet.FILE_A;
         result |= (pawns >>> 9) & ~SquareSet.FILE_H;
-        long queens = state.queens() & state.opp();
-        while (queens != 0) {
-            int from = Square.firstOf(queens);
-            result |= PieceSquareSet.queenRays(from, occupiedOwnKingExcluded);
-            queens ^= SquareSet.of(from);
-        }
-        long rooks = state.rooks() & state.opp();
+        long rooks = (state.rooks() | state.queens()) & state.opp() & PieceSquareSet.kingDangerRooksMask(ownKingSquare);
         while (rooks != 0) {
             int from = Square.firstOf(rooks);
             result |= PieceSquareSet.rookRays(from, occupiedOwnKingExcluded);
-            rooks ^= SquareSet.of(from);
+            rooks = SquareSet.clearFirst(rooks);
         }
-        long bishops = state.bishops() & state.opp();
+        long bishops = (state.bishops() | state.queens()) & state.opp() & PieceSquareSet.kingDangerBishopsMask(ownKingSquare);
         while (bishops != 0) {
             int from = Square.firstOf(bishops);
             result |= PieceSquareSet.bishopRays(from, occupiedOwnKingExcluded);
-            bishops ^= SquareSet.of(from);
+            bishops = SquareSet.clearFirst(bishops);
         }
-        long knights = state.knights() & state.opp();
+        long knights = state.knights() & state.opp() & PieceSquareSet.kingDangerKnightsMask(ownKingSquare);
         while (knights != 0) {
             int from = Square.firstOf(knights);
             result |= PieceSquareSet.knightMoves(from);
-            knights ^= SquareSet.of(from);
+            knights = SquareSet.clearFirst(knights);
         }
         long kings = state.kings() & state.opp();
-        while (kings != 0) {
-            int from = Square.firstOf(kings);
-            result |= PieceSquareSet.kingMoves(from);
-            kings ^= SquareSet.of(from);
-        }
+        int opponentKingSquare = Square.firstOf(kings);
+        result |= PieceSquareSet.kingMoves(opponentKingSquare);
         return result;
     }
 
@@ -180,7 +172,7 @@ public class LegalMoveGenerator {
             long queenSlides = PieceSquareSet.queenRays(from, occupied);
             generateDefaultMoves(Piece.QUEEN, from, queenSlides & ~state.own() & (pushMask | captureMask), out);
 
-            ownQueens ^= SquareSet.of(from);
+            ownQueens = SquareSet.clearFirst(ownQueens);
         }
     }
 
@@ -192,7 +184,7 @@ public class LegalMoveGenerator {
             long rookSlides = PieceSquareSet.rookRays(from, occupied);
             generateDefaultMoves(Piece.ROOK, from, rookSlides & ~state.own() & (pushMask | captureMask), out);
 
-            ownRooks ^= SquareSet.of(from);
+            ownRooks = SquareSet.clearFirst(ownRooks);
         }
     }
 
@@ -204,7 +196,7 @@ public class LegalMoveGenerator {
             long bishopSlides = PieceSquareSet.bishopRays(from, occupied);
             generateDefaultMoves(Piece.BISHOP, from, bishopSlides & ~state.own() & (pushMask | captureMask), out);
 
-            ownBishops ^= SquareSet.of(from);
+            ownBishops = SquareSet.clearFirst(ownBishops);
         }
     }
 
@@ -214,7 +206,7 @@ public class LegalMoveGenerator {
 
             generateDefaultMoves(Piece.KNIGHT, from, PieceSquareSet.knightMoves(from) & ~state.own() & (pushMask | captureMask), out);
 
-            ownKnights ^= SquareSet.of(from);
+            ownKnights = SquareSet.clearFirst(ownKnights);
         }
     }
 
@@ -245,7 +237,7 @@ public class LegalMoveGenerator {
             int to = Square.firstOf(toSquareSet);
             out.accept(Move.defaultMove(piece, from, to));
 
-            toSquareSet ^= SquareSet.of(to);
+            toSquareSet = SquareSet.clearFirst(toSquareSet);
         }
     }
 
@@ -265,7 +257,7 @@ public class LegalMoveGenerator {
                 out.accept(Move.pawnMove(from, to));
             }
 
-            moves ^= SquareSet.of(to);
+            moves = SquareSet.clearFirst(moves);
         }
         doubles &= pushMask;
         while (doubles != 0) {
@@ -273,7 +265,7 @@ public class LegalMoveGenerator {
             int from = to - 16;
             out.accept(Move.pawnDouble(from, to));
 
-            doubles ^= SquareSet.of(to);
+            doubles = SquareSet.clearFirst(doubles);
         }
 
         if (state.enPassantSquare != 0) {
@@ -306,7 +298,7 @@ public class LegalMoveGenerator {
                 out.accept(Move.pawnMove(from, to));
             }
 
-            leftAttacks ^= SquareSet.of(to);
+            leftAttacks = SquareSet.clearFirst(leftAttacks);
         }
         long rightAttacks = (ownPawns << 9) & ~SquareSet.FILE_A & state.opp() & captureMask;
         while (rightAttacks != 0) {
@@ -321,7 +313,7 @@ public class LegalMoveGenerator {
                 out.accept(Move.pawnMove(from, to));
             }
 
-            rightAttacks ^= SquareSet.of(to);
+            rightAttacks = SquareSet.clearFirst(rightAttacks);
         }
     }
 }
