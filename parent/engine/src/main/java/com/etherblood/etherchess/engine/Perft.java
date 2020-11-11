@@ -38,37 +38,31 @@ public class Perft {
     }
 
     private long innerPerft(State state, int depth) {
-        State child = allocCopy(state);
         ArrayList<Move> legalMoves = new ArrayList<>();
         moveGen.generateLegalMoves(state, legalMoves::add);
         long sum = 0;
         if (depth == 1) {
             sum += legalMoves.size();
         } else {
+            State child = alloc(state);
             for (Move move : legalMoves) {
-                try {
-                    child.copyFrom(state);
-                    move.apply(child);
-                    assert moveGen.findOwnCheckers(child) == 0;
-                    sum += innerPerft(child, depth - 1);
-                } catch (AssertionError e) {
-                    System.out.println(move);
-                    throw e;
-                }
+                child.copyFrom(state);
+                move.apply(child);
+                assert moveGen.findOwnCheckers(child) == 0;
+                sum += innerPerft(child, depth - 1);
             }
+            free(child);
         }
-        legalMoves.clear();
         return sum;
     }
 
-    private State allocCopy(State parent) {
+    private State alloc(State parent) {
         State child;
         if (statePool.isEmpty()) {
             child = new State(parent.zobrist);
         } else {
-            child = statePool.get(statePool.size() - 1);
+            child = statePool.remove(statePool.size() - 1);
         }
-        child.copyFrom(parent);
         return child;
     }
 

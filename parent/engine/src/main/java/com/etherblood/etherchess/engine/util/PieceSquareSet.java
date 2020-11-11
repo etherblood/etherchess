@@ -73,7 +73,6 @@ public class PieceSquareSet {
     }
 
     private static void precomputeKingDangerMasks() {
-        // slider masks could further be split by direction
         for (int kingSquare = 0; kingSquare < 64; kingSquare++) {
             long kingZone = KING_ATTACKS[kingSquare] | SquareSet.of(kingSquare);
             if (kingSquare == Square.E1) {
@@ -166,6 +165,8 @@ public class PieceSquareSet {
     }
 
     public static long raySquaresBetween(int from, int to) {
+        assert Square.isValid(from);
+        assert Square.isValid(to);
         return SQUARES_BETWEEN[from + 64 * to];
     }
 
