@@ -8,17 +8,16 @@ import com.etherblood.etherchess.engine.util.Square;
 import com.etherblood.etherchess.engine.util.SquareSet;
 import java.util.function.Consumer;
 
-public class LegalMoveGenerator {
+public class MoveGenerator {
 
     public static final Move LARGE_CASTLING = new Move(Move.CASTLING, Piece.KING, Square.E1, Square.C1);
     public static final Move SMALL_CASTLING = new Move(Move.CASTLING, Piece.KING, Square.E1, Square.G1);
 
     public void generatePseudoLegalMoves(State state, Consumer<Move> out) {
-        long kingDangerSquares = kingDangerSquares(state);
         long pinnedMask = 0;
         long pushMask = ~0;
         long captureMask = ~0;
-        kingMoves(state, kingDangerSquares, out);
+        pseudoLegalKingMoves(state, out);
         pawnMoves(state, state.pawns() & state.own() & ~pinnedMask, pushMask, captureMask, out);
         knightMoves(state, state.knights() & state.own() & ~pinnedMask, pushMask, captureMask, out);
         bishopMoves(state, state.bishops() & state.own() & ~pinnedMask, pushMask, captureMask, out);
@@ -29,7 +28,7 @@ public class LegalMoveGenerator {
     public void generateLegalMoves(State state, Consumer<Move> out) {
         long kingDangerSquares = kingDangerSquares(state);
 
-        kingMoves(state, kingDangerSquares, out);
+        legalKingMoves(state, kingDangerSquares, out);
 
         long captureMask = ~0;
         long pushMask = ~0;
@@ -38,10 +37,12 @@ public class LegalMoveGenerator {
             long checkers = findOpponentCheckers(state);
             int checkerCount = Long.bitCount(checkers);
             if (checkerCount > 1) {
-                // more than 1 opponent piece is giving check, we can only evade it with king moves
+                // more than 1 opponent piece is giving check, only king moves can evade it
                 return;
             }
             assert checkerCount == 1;
+            // TODO: if there are no squares between sliding attacker & king we can generate moves similar to findOpponentAttackers,
+            // since other pieces can only move onto the square of the checking piece
             captureMask = checkers;
             if ((checkers & (state.pawns() | state.knights())) != 0) {
                 pushMask = 0;
@@ -135,26 +136,26 @@ public class LegalMoveGenerator {
         int kingSquare = Square.firstOf(ownKings);
         long ray = SquareSet.simpleDirectionRay(direction, kingSquare);
         if ((state.own() & ray) != 0 && (state.opp() & ray & attackersMask) != 0) {
-            long kingRay = PieceSquareSet.directionRay(direction, kingSquare, state.occupied());
-            long pinned = kingRay & state.own();
-            if (pinned != 0) {
-                assert Long.bitCount(pinned) == 1;
+            // check above is not required, but it provides a cheap early exit condition
+            long pinRay = PieceSquareSet.directionRay(direction, kingSquare, state.opp());
+            long pinned = pinRay & state.own();
+            if (Long.bitCount(pinned) == 1) {
                 int from = Square.firstOf(pinned);
-                long pinRay = PieceSquareSet.directionRay(direction, from, state.occupied());
                 if ((pinRay & attackersMask & state.opp()) != 0) {
                     if ((pinned & state.rooks()) != 0 && !Direction.isDiagonal(direction)) {
-                        long slides = pinRay | (kingRay ^ pinned);
+                        long slides = pinRay ^ pinned;
                         generateDefaultMoves(Piece.ROOK, from, slides & ~state.own() & (pushMask | captureMask), out);
                     } else if ((pinned & state.queens()) != 0) {
-                        long slides = pinRay | (kingRay ^ pinned);
+                        long slides = pinRay ^ pinned;
                         generateDefaultMoves(Piece.QUEEN, from, slides & ~state.own() & (pushMask | captureMask), out);
                     } else if ((pinned & state.bishops()) != 0 && Direction.isDiagonal(direction)) {
-                        long slides = pinRay | (kingRay ^ pinned);
+                        long slides = pinRay ^ pinned;
                         generateDefaultMoves(Piece.BISHOP, from, slides & ~state.own() & (pushMask | captureMask), out);
                     } else if ((pinned & state.pawns()) != 0) {
-                        pawnMoves(state, pinned, pushMask & ray, captureMask & ray, out);
+                        pawnMoves(state, pinned, pushMask & pinRay, captureMask & pinRay, out);
                     } else {
                         // pinned knights can never move
+                        // kings can not be pinned
                     }
 
                     pinnedSet |= pinned;
@@ -210,7 +211,27 @@ public class LegalMoveGenerator {
         }
     }
 
-    private void kingMoves(State state, long kingDangerSquares, Consumer<Move> out) {
+    private void pseudoLegalKingMoves(State state, Consumer<Move> out) {
+        long ownKings = state.kings() & state.own();
+        int from = Square.firstOf(ownKings);
+        generateDefaultMoves(Piece.KING, from, PieceSquareSet.kingMoves(from) & ~state.own(), out);
+        if ((state.availableCastlings & Castling.A1) != 0) {
+            if (((SquareSet.B1 | SquareSet.C1 | SquareSet.D1) & state.occupied()) == 0) {
+                if (((SquareSet.C1 | SquareSet.D1 | SquareSet.E1) & kingDangerSquares(state)) == 0) {
+                    out.accept(LARGE_CASTLING);
+                }
+            }
+        }
+        if ((state.availableCastlings & Castling.H1) != 0) {
+            if (((SquareSet.F1 | SquareSet.G1) & state.occupied()) == 0) {
+                if (((SquareSet.E1 | SquareSet.F1 | SquareSet.G1) & kingDangerSquares(state)) == 0) {
+                    out.accept(SMALL_CASTLING);
+                }
+            }
+        }
+    }
+
+    private void legalKingMoves(State state, long kingDangerSquares, Consumer<Move> out) {
         long ownKings = state.kings() & state.own();
         int from = Square.firstOf(ownKings);
         generateDefaultMoves(Piece.KING, from, PieceSquareSet.kingMoves(from) & ~(state.own() | kingDangerSquares), out);

@@ -7,6 +7,8 @@ import com.etherblood.etherchess.engine.util.SquareSet;
 
 public class State {
 
+    public final static int NO_EN_PASSANT = 0;
+
     public final MirrorZobrist zobrist;
 
     private long own;
@@ -44,7 +46,7 @@ public class State {
         queens = 0;
         piecesHash = 0;
         availableCastlings = Castling.OWN | Castling.OPP;
-        enPassantSquare = 0;
+        enPassantSquare = NO_EN_PASSANT;
         fiftyMovesCounter = 0;
         isWhite = true;
     }
@@ -97,6 +99,8 @@ public class State {
         enPassantSquare = other.enPassantSquare;
         fiftyMovesCounter = other.fiftyMovesCounter;
         isWhite = other.isWhite;
+
+        piecesHash = other.piecesHash;
         assert assertValid();
     }
 
@@ -113,11 +117,11 @@ public class State {
         queens = SquareSet.mirrorY(queens);
 
         availableCastlings = Castling.mirror(availableCastlings);
-        if (enPassantSquare != 0) {
+        if (enPassantSquare != NO_EN_PASSANT) {
             enPassantSquare = Square.mirrorY(enPassantSquare);
         }
         isWhite = !isWhite;
-        piecesHash = zobrist.mirror(piecesHash);
+        piecesHash = MirrorZobrist.mirror(piecesHash);
         assert assertValid();
     }
 
@@ -179,6 +183,15 @@ public class State {
         assert (own & opp) == 0;
         assert (own | opp) == (pawns | kings | knights | bishops | rooks | queens);
         assert (own ^ opp) == (pawns ^ kings ^ knights ^ bishops ^ rooks ^ queens);
+        assert enPassantSquare == NO_EN_PASSANT || Square.isValid(enPassantSquare);
+        long expectedPiecesHash = 0;
+        for (int square = 0; square < 64; square++) {
+            int piece = getSquarePiece(square);
+            if (piece != Piece.EMPTY) {
+                expectedPiecesHash ^= zobrist.pieceHash((SquareSet.of(square) & own) != 0, piece, square);
+            }
+        }
+        assert expectedPiecesHash == piecesHash;
         return true;
     }
 

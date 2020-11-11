@@ -1,17 +1,47 @@
 package com.etherblood.etherchess.engine;
 
-import java.time.Duration;
+import com.etherblood.etherchess.engine.table.AlwaysReplaceTable;
+import com.etherblood.etherchess.engine.table.TableEntry;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Scanner;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class PerftTest {
 
-    private static final int PERFT_TIMEOUT_MILLIS = 10000;
+    private final AlwaysReplaceTable table = new AlwaysReplaceTable(24);
+
+    @BeforeEach
+    public void reset() {
+        table.clear();
+    }
+
+    @Test
+    public void perftFile() throws IOException {
+        // https://github.com/elcabesa/vajolet/blob/develop/tests/perft.txt
+        int maxPerft = 10_000;
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("perft.txt")) {
+            Scanner scanner = new Scanner(is);
+            while (scanner.hasNext()) {
+                String line = scanner.nextLine();
+                String[] parts = line.split(",");
+                for (int depth = 1; depth < parts.length; depth++) {
+                    String fen = parts[0];
+                    long count = Long.parseLong(parts[depth]);
+                    if (count <= maxPerft) {
+                        assertPerft(fen, depth, count);
+                    }
+                }
+            }
+        }
+    }
 
     @Test
     public void perft1() {
@@ -307,41 +337,47 @@ public class PerftTest {
     }
 
     private long perft(String fen, int depth) {
-        return Assertions.assertTimeoutPreemptively(Duration.ofMillis(PERFT_TIMEOUT_MILLIS), () -> {
-            State state = new State(zobrist());
-            FenConverter converter = new FenConverter();
-            converter.fromFen(state, fen);
-            System.out.println(fen);
-            System.out.println(state.toBoardString());
-            long perft = perft(state, depth);
-            System.out.println();
-            return perft;
-        });
+        State state = new State(zobrist());
+        FenConverter converter = new FenConverter();
+        converter.fromFen(state, fen);
+        System.out.println(fen);
+        System.out.println(state.toBoardString());
+        long perft = perft(state, depth);
+        System.out.println();
+        return perft;
     }
 
     private long perft(State state, int depth) {
         if (depth == 0) {
             return 1;
         }
-        State child = new State(zobrist());
-        LegalMoveGenerator moveGen = new LegalMoveGenerator();
+        TableEntry entry = new TableEntry();
+        long hash = state.hash();
+        if (table.load(hash, entry) && (entry.raw & 0xff) == depth) {
+            return entry.raw >>> 8;
+        }
+        MoveGenerator moveGen = new MoveGenerator();
         List<Move> legalMoves = new ArrayList<>();
         moveGen.generateLegalMoves(state, legalMoves::add);
-        if (depth == 1) {
-            return legalMoves.size();
-        }
         long sum = 0;
-        for (Move move : legalMoves) {
-            try {
-                child.copyFrom(state);
-                move.apply(child);
-                assert moveGen.findOwnCheckers(child) == 0;
-                sum += perft(child, depth - 1);
-            } catch (AssertionError e) {
-                System.out.println(move);
-                throw e;
+        if (depth == 1) {
+            sum = legalMoves.size();
+        } else {
+            State child = new State(zobrist());
+            for (Move move : legalMoves) {
+                try {
+                    child.copyFrom(state);
+                    move.apply(child);
+                    assert moveGen.findOwnCheckers(child) == 0;
+                    sum += perft(child, depth - 1);
+                } catch (AssertionError e) {
+                    System.out.println(move);
+                    throw e;
+                }
             }
         }
+        entry.raw = (sum << 8) | depth;
+        table.store(hash, entry);
         return sum;
     }
 
@@ -361,7 +397,7 @@ public class PerftTest {
             throw new IllegalArgumentException();
         }
         State child = new State(zobrist());
-        LegalMoveGenerator moveGen = new LegalMoveGenerator();
+        MoveGenerator moveGen = new MoveGenerator();
         List<Move> legalMoves = new ArrayList<>();
         moveGen.generateLegalMoves(state, legalMoves::add);
         legalMoves.sort(Move.defaultComparator());

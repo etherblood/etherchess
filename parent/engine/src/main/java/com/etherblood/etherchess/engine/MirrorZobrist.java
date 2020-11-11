@@ -1,7 +1,7 @@
 package com.etherblood.etherchess.engine;
 
-import com.etherblood.etherchess.engine.util.Square;
 import com.etherblood.etherchess.engine.util.Piece;
+import com.etherblood.etherchess.engine.util.Square;
 import java.util.function.LongSupplier;
 
 public class MirrorZobrist {
@@ -20,14 +20,13 @@ public class MirrorZobrist {
         enPassantHash = random.getAsLong();
     }
 
-    public long mirror(long hash) {
+    public static long mirror(long hash) {
         return Long.reverseBytes(hash);
     }
 
     public long metaHash(int enPassant, int castling) {
         long hash = Long.rotateLeft(castlingHash, castling);
-        if (enPassant != 0) {
-//            hash ^= Long.rotateLeft(enPassantHash, Square.x(enPassant));// x-coordinate is enough
+        if (enPassant != State.NO_EN_PASSANT) {
             hash ^= Long.rotateLeft(enPassantHash, enPassant);
         }
         return hash;
@@ -42,6 +41,6 @@ public class MirrorZobrist {
         if (isOwn) {
             return squareHashes[square];
         }
-        return Long.reverseBytes(squareHashes[Square.mirrorY(square)]);
+        return mirror(squareHashes[Square.mirrorY(square)]);
     }
 }

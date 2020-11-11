@@ -1,11 +1,19 @@
-package com.etherblood.etherchess.engine;
+package com.etherblood.etherchess.engine.sandbox;
 
+import com.etherblood.etherchess.engine.FenConverter;
+import com.etherblood.etherchess.engine.MirrorZobrist;
+import com.etherblood.etherchess.engine.Move;
+import com.etherblood.etherchess.engine.MoveGenerator;
+import com.etherblood.etherchess.engine.State;
+import com.etherblood.etherchess.engine.table.AlwaysReplaceTable;
+import com.etherblood.etherchess.engine.table.TableEntry;
 import java.util.ArrayList;
 import java.util.Random;
 
 public class Perft {
 
-    private final LegalMoveGenerator moveGen = new LegalMoveGenerator();
+    private final AlwaysReplaceTable table = new AlwaysReplaceTable(25);
+    private final MoveGenerator moveGen = new MoveGenerator();
 
     public static void main(String[] args) {
         String fen = FenConverter.DEFAULT_STARTPOSITION;
@@ -23,7 +31,9 @@ public class Perft {
         long durationNanos = System.nanoTime() - startNanos;
         System.out.println("perft(" + depth + ")=" + sum);
         long durationMillis = durationNanos / 1_000_000;
-        System.out.println("In " + durationMillis + " ms (" + Math.round((double) sum / durationMillis) + " knps)");
+        System.out.println("in " + durationMillis + " ms (" + Math.round((double) sum / durationMillis) + " knps)");
+        System.out.println();
+        perft.table.printStats();
     }
 
     public long perft(State state, int depth) {
@@ -37,6 +47,11 @@ public class Perft {
     }
 
     private long innerPerft(State state, int depth) {
+        TableEntry entry = new TableEntry();
+        long hash = state.hash();
+        if (table.load(hash, entry) && (entry.raw & 0xff) == depth) {
+            return entry.raw >>> 8;
+        }
         ArrayList<Move> legalMoves = new ArrayList<>();
         moveGen.generateLegalMoves(state, legalMoves::add);
         long sum = 0;
@@ -51,6 +66,8 @@ public class Perft {
                 sum += innerPerft(child, depth - 1);
             }
         }
+        entry.raw = (sum << 8) | depth;
+        table.store(hash, entry);
         return sum;
     }
 }

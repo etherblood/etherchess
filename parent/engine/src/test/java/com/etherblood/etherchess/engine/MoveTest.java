@@ -46,7 +46,7 @@ public class MoveTest {
     public void castlingFlagsUpdatedAfterLargeCastling() {
         State state = new State(zobrist);
         new FenConverter().fromFen(state, "r3k2r/p6p/8/B7/1pp1p3/3b4/P6P/R3K2R w KQkq -");
-        LegalMoveGenerator.LARGE_CASTLING.apply(state);
+        MoveGenerator.LARGE_CASTLING.apply(state);
         Assertions.assertEquals(Castling.OWN, state.availableCastlings);
     }
 

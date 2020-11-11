@@ -130,19 +130,18 @@ public class SquareSet {
     }
 
     private static void precomputeRays() {
-        // skip last square in loop, it is empty
-        for (int square = 0; square < 63; square++) {
-            NORTHWEST_RAY[square] = antiDiagonalOf(square) & (of(square + 1) * full());
-            NORTH_RAY[square] = fileOf(square) & (of(square + 1) * full());
-            NORTHEAST_RAY[square] = diagonalOf(square) & (of(square + 1) * full());
-            EAST_RAY[square] = rankOf(square) & (of(square + 1) * full());
+        for (int square = 0; square < 64; square++) {
+            SOUTHEAST_RAY[square] = antiDiagonalOf(square) & (of(square) - 1);
+            SOUTH_RAY[square] = fileOf(square) & (of(square) - 1);
+            SOUTHWEST_RAY[square] = diagonalOf(square) & (of(square) - 1);
+            WEST_RAY[square] = rankOf(square) & (of(square) - 1);
         }
         for (int square = 0; square < 64; square++) {
             int reversedSquare = Square.reverse(square);
-            SOUTHEAST_RAY[square] = reverse(NORTHWEST_RAY[reversedSquare]);
-            SOUTH_RAY[square] = reverse(NORTH_RAY[reversedSquare]);
-            SOUTHWEST_RAY[square] = reverse(NORTHEAST_RAY[reversedSquare]);
-            WEST_RAY[square] = reverse(EAST_RAY[reversedSquare]);
+            NORTHWEST_RAY[square] = reverse(SOUTHEAST_RAY[reversedSquare]);
+            NORTH_RAY[square] = reverse(SOUTH_RAY[reversedSquare]);
+            NORTHEAST_RAY[square] = reverse(SOUTHWEST_RAY[reversedSquare]);
+            EAST_RAY[square] = reverse(WEST_RAY[reversedSquare]);
         }
     }
 
