@@ -5,7 +5,6 @@ import java.util.Random;
 
 public class Perft {
 
-    private final ArrayList<State> statePool = new ArrayList<>();
     private final LegalMoveGenerator moveGen = new LegalMoveGenerator();
 
     public static void main(String[] args) {
@@ -44,29 +43,14 @@ public class Perft {
         if (depth == 1) {
             sum += legalMoves.size();
         } else {
-            State child = alloc(state);
+            State child = new State(state.zobrist);
             for (Move move : legalMoves) {
                 child.copyFrom(state);
                 move.apply(child);
                 assert moveGen.findOwnCheckers(child) == 0;
                 sum += innerPerft(child, depth - 1);
             }
-            free(child);
         }
         return sum;
-    }
-
-    private State alloc(State parent) {
-        State child;
-        if (statePool.isEmpty()) {
-            child = new State(parent.zobrist);
-        } else {
-            child = statePool.remove(statePool.size() - 1);
-        }
-        return child;
-    }
-
-    private void free(State state) {
-        statePool.add(state);
     }
 }
