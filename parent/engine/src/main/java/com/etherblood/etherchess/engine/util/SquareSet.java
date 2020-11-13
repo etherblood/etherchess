@@ -222,6 +222,10 @@ public class SquareSet {
         return Long.reverse(squareSet);
     }
 
+    public static int count(long squareSet) {
+        return Long.bitCount(squareSet);
+    }
+
     public static String toString(long squareSet) {
         StringBuilder builder = new StringBuilder();
         for (int y = 7; y >= 0; y--) {

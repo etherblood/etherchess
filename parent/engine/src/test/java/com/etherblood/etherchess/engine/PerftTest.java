@@ -367,7 +367,7 @@ public class PerftTest {
             for (Move move : legalMoves) {
                 try {
                     child.copyFrom(state);
-                    move.apply(child);
+                    move.applyTo(child);
                     assert moveGen.findOwnCheckers(child) == 0;
                     sum += perft(child, depth - 1);
                 } catch (AssertionError e) {
@@ -411,7 +411,7 @@ public class PerftTest {
         for (Move move : legalMoves) {
             try {
                 child.copyFrom(state);
-                move.apply(child);
+                move.applyTo(child);
                 assert moveGen.findOwnCheckers(child) == 0;
                 result.put(move, perft(child, depth - 1));
             } catch (AssertionError e) {

@@ -41,7 +41,7 @@ public class AlwaysReplaceTable implements Table {
         System.out.println(" misses: " + misses + " - " + StatUtil.toPercentage(misses, hits + misses, 1));
         System.out.println(" loads: " + (hits + misses));
         System.out.println(" stores: " + stores);
-        System.out.println(" stores/size: " + StatUtil.toPercentage(stores, size, 0) + "%");
+        System.out.println(" stores/size: " + StatUtil.toPercentage(stores, size, 0));
     }
 
     public final void clear() {

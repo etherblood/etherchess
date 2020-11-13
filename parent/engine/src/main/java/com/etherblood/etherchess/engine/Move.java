@@ -35,6 +35,15 @@ public class Move {
         assert from != to;
     }
 
+    public static Move unpack(int raw) {
+        assert (raw & 0xffffffff) == raw;
+        return new Move((raw >> 24) & 0xff, (raw >> 16) & 0xff, (raw >> 8) & 0xff, (raw >> 0) & 0xff);
+    }
+
+    public static int pack(Move move) {
+        return (move.type << 24) | (move.piece << 16) | (move.from << 8) | (move.to << 0);
+    }
+
     public static Move defaultMove(int piece, int from, int to) {
         return new Move(Move.DEFAULT, piece, from, to);
     }
@@ -55,7 +64,7 @@ public class Move {
         return new Move(promotionType, Piece.PAWN, from, to);
     }
 
-    public void apply(State state) {
+    public void applyTo(State state) {
         assert state.getSquarePiece(from) == piece;
         assert (state.own() & SquareSet.of(to)) == 0;
         state.fiftyMovesCounter++;

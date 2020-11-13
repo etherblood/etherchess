@@ -178,8 +178,8 @@ public class State {
     }
 
     public boolean assertValid() {
-        assert Long.bitCount(own & kings) == 1;
-        assert Long.bitCount(opp & kings) == 1;
+        assert SquareSet.count(own & kings) == 1;
+        assert SquareSet.count(opp & kings) == 1;
         assert (own & opp) == 0;
         assert (own | opp) == (pawns | kings | knights | bishops | rooks | queens);
         assert (own ^ opp) == (pawns ^ kings ^ knights ^ bishops ^ rooks ^ queens);

@@ -6,13 +6,16 @@ import com.etherblood.etherchess.engine.Move;
 import com.etherblood.etherchess.engine.MoveGenerator;
 import com.etherblood.etherchess.engine.State;
 import com.etherblood.etherchess.engine.table.AlwaysReplaceTable;
+import com.etherblood.etherchess.engine.table.NoopTable;
+import com.etherblood.etherchess.engine.table.Table;
 import com.etherblood.etherchess.engine.table.TableEntry;
 import java.util.ArrayList;
 import java.util.Random;
 
 public class Perft {
 
-    private final AlwaysReplaceTable table = new AlwaysReplaceTable(25);
+    //    private final Table table = new AlwaysReplaceTable(25);
+    private final Table table = new NoopTable();
     private final MoveGenerator moveGen = new MoveGenerator();
 
     public static void main(String[] args) {
@@ -26,6 +29,11 @@ public class Perft {
 
         System.out.println(fen);
         System.out.println(state.toBoardString());
+        System.out.println("warmup...");
+        for (int i = 0; i < depth; i++) {
+            perft.perft(state, i);
+        }
+        System.out.println("calculating...");
         long startNanos = System.nanoTime();
         long sum = perft.perft(state, depth);
         long durationNanos = System.nanoTime() - startNanos;
@@ -33,7 +41,9 @@ public class Perft {
         long durationMillis = durationNanos / 1_000_000;
         System.out.println("in " + durationMillis + " ms (" + Math.round((double) sum / durationMillis) + " knps)");
         System.out.println();
-        perft.table.printStats();
+        if (perft.table instanceof AlwaysReplaceTable) {
+            ((AlwaysReplaceTable) perft.table).printStats();
+        }
     }
 
     public long perft(State state, int depth) {
@@ -61,7 +71,7 @@ public class Perft {
             State child = new State(state.zobrist);
             for (Move move : legalMoves) {
                 child.copyFrom(state);
-                move.apply(child);
+                move.applyTo(child);
                 assert moveGen.findOwnCheckers(child) == 0;
                 sum += innerPerft(child, depth - 1);
             }

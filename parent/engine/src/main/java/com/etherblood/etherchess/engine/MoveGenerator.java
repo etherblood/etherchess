@@ -26,47 +26,58 @@ public class MoveGenerator {
     }
 
     public void generateLegalMoves(State state, Consumer<Move> out) {
+        assert state.assertValid();
         long kingDangerSquares = kingDangerSquares(state);
 
         legalKingMoves(state, kingDangerSquares, out);
-
-        long captureMask = ~0;
+        long captureMask = state.opp();
         long pushMask = ~0;
         long ownKings = state.kings() & state.own();
         if ((ownKings & kingDangerSquares) != 0) {
             long checkers = findOpponentCheckers(state);
-            int checkerCount = Long.bitCount(checkers);
+            int checkerCount = SquareSet.count(checkers);
             if (checkerCount > 1) {
                 // more than 1 opponent piece is giving check, only king moves can evade it
                 return;
             }
             assert checkerCount == 1;
-            // TODO: if there are no squares between sliding attacker & king we can generate moves similar to findOpponentAttackers,
-            // since other pieces can only move onto the square of the checking piece
             captureMask = checkers;
-            if ((checkers & (state.pawns() | state.knights())) != 0) {
+            int checkerSquare = Square.firstOf(checkers);
+            if ((checkers & (PieceSquareSet.kingMoves(checkerSquare) | PieceSquareSet.knightMoves(checkerSquare))) != 0) {
+                // this if is not required but is cheaper than a full move gen
+                long sourceMask = findOwnAttackers(state, checkerSquare);
                 pushMask = 0;
-            } else {
-                pushMask = PieceSquareSet.raySquaresBetween(Square.firstOf(ownKings), Square.firstOf(checkers));
+                generateDefaultMoves(Piece.QUEEN, sourceMask & state.queens(), checkerSquare, out);
+                generateDefaultMoves(Piece.ROOK, sourceMask & state.rooks(), checkerSquare, out);
+                generateDefaultMoves(Piece.BISHOP, sourceMask & state.bishops(), checkerSquare, out);
+                generateDefaultMoves(Piece.KNIGHT, sourceMask & state.knights(), checkerSquare, out);
+                generateDefaultMoves(Piece.KING, sourceMask & state.kings(), checkerSquare, out);
+                pawnMoves(state, sourceMask & state.pawns(), pushMask, captureMask, out);
+                return;
             }
+            int kingSquare = Square.firstOf(ownKings);
+            pushMask = PieceSquareSet.raySquaresBetween(kingSquare, checkerSquare);
         }
 
         long pinnedMask = 0;
-        pinnedMask |= handlePinnedMoves(state, Direction.NORTH, state.rooks() | state.queens(), pushMask, captureMask, out);
-        pinnedMask |= handlePinnedMoves(state, Direction.EAST, state.rooks() | state.queens(), pushMask, captureMask, out);
-        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH, state.rooks() | state.queens(), pushMask, captureMask, out);
-        pinnedMask |= handlePinnedMoves(state, Direction.WEST, state.rooks() | state.queens(), pushMask, captureMask, out);
+        long oppRookLikes = (state.rooks() | state.queens()) & state.opp();
+        pinnedMask |= handlePinnedMoves(state, Direction.NORTH, oppRookLikes, pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.EAST, oppRookLikes, pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH, oppRookLikes, pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.WEST, oppRookLikes, pushMask, captureMask, out);
 
-        pinnedMask |= handlePinnedMoves(state, Direction.NORTH_EAST, state.bishops() | state.queens(), pushMask, captureMask, out);
-        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH_EAST, state.bishops() | state.queens(), pushMask, captureMask, out);
-        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH_WEST, state.bishops() | state.queens(), pushMask, captureMask, out);
-        pinnedMask |= handlePinnedMoves(state, Direction.NORTH_WEST, state.bishops() | state.queens(), pushMask, captureMask, out);
+        long oppBishopLikes = (state.bishops() | state.queens()) & state.opp();
+        pinnedMask |= handlePinnedMoves(state, Direction.NORTH_EAST, oppBishopLikes, pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH_EAST, oppBishopLikes, pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.SOUTH_WEST, oppBishopLikes, pushMask, captureMask, out);
+        pinnedMask |= handlePinnedMoves(state, Direction.NORTH_WEST, oppBishopLikes, pushMask, captureMask, out);
 
-        pawnMoves(state, state.pawns() & state.own() & ~pinnedMask, pushMask, captureMask, out);
-        knightMoves(state, state.knights() & state.own() & ~pinnedMask, pushMask, captureMask, out);
-        bishopMoves(state, state.bishops() & state.own() & ~pinnedMask, pushMask, captureMask, out);
-        rookMoves(state, state.rooks() & state.own() & ~pinnedMask, pushMask, captureMask, out);
-        queenMoves(state, state.queens() & state.own() & ~pinnedMask, pushMask, captureMask, out);
+        long sourceMask = state.own();
+        pawnMoves(state, sourceMask & state.pawns() & ~pinnedMask, pushMask, captureMask, out);
+        knightMoves(state, sourceMask & state.knights() & ~pinnedMask, pushMask, captureMask, out);
+        bishopMoves(state, sourceMask & state.bishops() & ~pinnedMask, pushMask, captureMask, out);
+        rookMoves(state, sourceMask & state.rooks() & ~pinnedMask, pushMask, captureMask, out);
+        queenMoves(state, sourceMask & state.queens() & ~pinnedMask, pushMask, captureMask, out);
     }
 
     private long kingDangerSquares(State state) {
@@ -77,17 +88,17 @@ public class MoveGenerator {
         long pawns = state.pawns() & state.opp();
         result |= (pawns >>> 7) & ~SquareSet.FILE_A;
         result |= (pawns >>> 9) & ~SquareSet.FILE_H;
-        long rooks = (state.rooks() | state.queens()) & state.opp() & PieceSquareSet.kingDangerRooksMask(ownKingSquare);
-        while (rooks != 0) {
-            int from = Square.firstOf(rooks);
+        long rookLikes = (state.rooks() | state.queens()) & state.opp() & PieceSquareSet.kingDangerRooksMask(ownKingSquare);
+        while (rookLikes != 0) {
+            int from = Square.firstOf(rookLikes);
             result |= PieceSquareSet.rookRays(from, occupiedOwnKingExcluded);
-            rooks = SquareSet.clearFirst(rooks);
+            rookLikes = SquareSet.clearFirst(rookLikes);
         }
-        long bishops = (state.bishops() | state.queens()) & state.opp() & PieceSquareSet.kingDangerBishopsMask(ownKingSquare);
-        while (bishops != 0) {
-            int from = Square.firstOf(bishops);
+        long bishopLikes = (state.bishops() | state.queens()) & state.opp() & PieceSquareSet.kingDangerBishopsMask(ownKingSquare);
+        while (bishopLikes != 0) {
+            int from = Square.firstOf(bishopLikes);
             result |= PieceSquareSet.bishopRays(from, occupiedOwnKingExcluded);
-            bishops = SquareSet.clearFirst(bishops);
+            bishopLikes = SquareSet.clearFirst(bishopLikes);
         }
         long knights = state.knights() & state.opp() & PieceSquareSet.kingDangerKnightsMask(ownKingSquare);
         while (knights != 0) {
@@ -130,18 +141,18 @@ public class MoveGenerator {
         return attackers;
     }
 
-    private long handlePinnedMoves(State state, int direction, long attackersMask, long pushMask, long captureMask, Consumer<Move> out) {
+    private long handlePinnedMoves(State state, int direction, long opponentAttackersMask, long pushMask, long captureMask, Consumer<Move> out) {
         long pinnedSet = 0;
         long ownKings = state.kings() & state.own();
         int kingSquare = Square.firstOf(ownKings);
         long ray = SquareSet.simpleDirectionRay(direction, kingSquare);
-        if ((state.own() & ray) != 0 && (state.opp() & ray & attackersMask) != 0) {
+        if ((state.own() & ray) != 0 && (ray & opponentAttackersMask) != 0) {
             // check above is not required, but it provides a cheap early exit condition
             long pinRay = PieceSquareSet.directionRay(direction, kingSquare, state.opp());
             long pinned = pinRay & state.own();
-            if (Long.bitCount(pinned) == 1) {
+            if (SquareSet.count(pinned) == 1) {
                 int from = Square.firstOf(pinned);
-                if ((pinRay & attackersMask & state.opp()) != 0) {
+                if ((pinRay & opponentAttackersMask) != 0) {
                     if ((pinned & state.rooks()) != 0 && !Direction.isDiagonal(direction)) {
                         long slides = pinRay ^ pinned;
                         generateDefaultMoves(Piece.ROOK, from, slides & ~state.own() & (pushMask | captureMask), out);
@@ -259,6 +270,15 @@ public class MoveGenerator {
             out.accept(Move.defaultMove(piece, from, to));
 
             toSquareSet = SquareSet.clearFirst(toSquareSet);
+        }
+    }
+
+    private void generateDefaultMoves(int piece, long fromSquareSet, int to, Consumer<Move> out) {
+        while (fromSquareSet != 0) {
+            int from = Square.firstOf(fromSquareSet);
+            out.accept(Move.defaultMove(piece, from, to));
+
+            fromSquareSet = SquareSet.clearFirst(fromSquareSet);
         }
     }
 
