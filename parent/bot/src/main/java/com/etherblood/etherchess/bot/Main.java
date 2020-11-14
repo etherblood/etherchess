@@ -12,7 +12,7 @@ import java.util.Random;
 public class Main {
     public static void main(String... args) {
         String fen = FenConverter.DEFAULT_STARTPOSITION;
-        int depth = 7;
+        int depth = 9;
 
         BotImpl bot = new BotImpl(new AlwaysReplaceTable(25), new PieceSquareEvaluation(), new MoveGenerator());
         State state = new State(new MirrorZobrist(new Random(12)::nextLong));

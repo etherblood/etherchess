@@ -133,6 +133,11 @@ public class BotImpl {
         if (depth <= 0) {
             return clamp(eval.evaluate(state) + moves.size(), alpha, beta);
         }
+        if (hashMove != null) {
+            moves.subList(1, moves.size()).sort(new SimpleMoveComparator(state));
+        } else {
+            moves.sort(new SimpleMoveComparator(state));
+        }
 
         entry.raw = packRaw(depth, alpha, UPPER_BOUND);
         State child = new State(state.zobrist);
