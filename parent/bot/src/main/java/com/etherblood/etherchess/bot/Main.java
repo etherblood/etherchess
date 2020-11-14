@@ -14,12 +14,15 @@ public class Main {
         String fen = FenConverter.DEFAULT_STARTPOSITION;
         int depth = 9;
 
-        BotImpl bot = new BotImpl(new AlwaysReplaceTable(25), new PieceSquareEvaluation(), new MoveGenerator());
+        AlwaysReplaceTable table = new AlwaysReplaceTable(25);
+        BotImpl bot = new BotImpl(table, new PieceSquareEvaluation(), new MoveGenerator());
         State state = new State(new MirrorZobrist(new Random(12)::nextLong));
         new FenConverter().fromFen(state, fen);
         HashHistory history = new HashHistory(state.hash());
 
+        System.out.println(state.toBoardString());
         Move move = bot.findBest(state, history, depth);
+        table.printStats();
         System.out.println(move);
     }
 }

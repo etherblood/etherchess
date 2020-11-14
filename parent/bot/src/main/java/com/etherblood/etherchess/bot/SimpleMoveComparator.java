@@ -17,6 +17,9 @@ public class SimpleMoveComparator implements Comparator<Move> {
 
     @Override
     public int compare(Move a, Move b) {
+        if (a.equals(b)) {
+            throw new AssertionError();
+        }
         if (a.equals(hashMove)) {
             return -1;
         }
@@ -25,17 +28,19 @@ public class SimpleMoveComparator implements Comparator<Move> {
         }
         int captureA = state.getSquarePiece(a.to);
         int captureB = state.getSquarePiece(b.to);
-        if (captureA != captureB) {
-            return -Integer.compare(
-                    PieceSquareTable.score(captureA, a.to),
-                    PieceSquareTable.score(captureB, b.to));
+        int comparison = -Integer.compare(
+                PieceSquareTable.score(captureA, a.to),
+                PieceSquareTable.score(captureB, b.to));
+        if (comparison != 0) {
+            return comparison;
         }
         int pieceA = state.getSquarePiece(a.from);
         int pieceB = state.getSquarePiece(b.from);
-        if (pieceA != pieceB) {
-            return Integer.compare(
-                    PieceSquareTable.score(pieceA, a.from),
-                    PieceSquareTable.score(pieceB, b.from));
+        comparison = Integer.compare(
+                PieceSquareTable.score(pieceA, a.from),
+                PieceSquareTable.score(pieceB, b.from));
+        if (comparison != 0) {
+            return comparison;
         }
         return -Integer.compare(
                 PieceSquareTable.score(pieceA, a.to) - PieceSquareTable.score(pieceA, a.from),

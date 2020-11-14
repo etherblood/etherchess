@@ -122,6 +122,10 @@ public class Square {
         return (y << 3) | x;
     }
 
+    public static int parse(String string) {
+        return square(string.charAt(0) - 'a', string.charAt(1) - '1');
+    }
+
     public static boolean isValid(int square) {
         return (square & 0b111111) == square;
     }

@@ -8,13 +8,17 @@ import com.etherblood.etherchess.engine.table.Table;
 import com.etherblood.etherchess.engine.table.TableEntry;
 import com.etherblood.etherchess.engine.util.SquareSet;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BotImpl {
 
     private static final boolean VERBOSE = true;
     // http://talkchess.com/forum3/viewtopic.php?f=7&t=74769
     private static final boolean INTERNAL_ITERATIVE_REDUCTIONS = true;
+    private static final boolean PRINCIPAL_VARIATION_SEARCH = true;
+    private static final boolean ITERATIVE_DEEPENING = true;
 
     private static final int UNKNOWN_BOUND = 0;
     private static final int LOWER_BOUND = 1;
@@ -27,6 +31,7 @@ public class BotImpl {
     private final MoveGenerator moveGen;
 
     private long nodes;
+    private long deepestPv;
 
     public BotImpl(Table table, Evaluation eval, MoveGenerator moveGen) {
         this.table = table;
@@ -38,16 +43,32 @@ public class BotImpl {
         if (history.lastHash() != state.hash()) {
             throw new IllegalArgumentException("Last hash of history must match current state");
         }
+        if (VERBOSE) {
+            List<String> flags = new ArrayList<>();
+            flags.add("verbose");
+            if (INTERNAL_ITERATIVE_REDUCTIONS) {
+                flags.add("iir");
+            }
+            if (PRINCIPAL_VARIATION_SEARCH) {
+                flags.add("pvs");
+            }
+            if (ITERATIVE_DEEPENING) {
+                flags.add("id");
+            }
+            flags.sort(Comparator.naturalOrder());
+            System.out.println("config: " + flags.stream().collect(Collectors.joining(", ")));
+            System.out.println("depth: " + depth);
+        }
         nodes = 0;
         int score = 0;
         long startNanos = System.nanoTime();
-        for (int i = 1; i <= depth; i++) {
+        for (int i = ITERATIVE_DEEPENING ? 1 : depth; i <= depth; i++) {
             score = alphaBeta(state, history, i, -MATE_SCORE - 1, MATE_SCORE + 1);
         }
         long durationNanos = System.nanoTime() - startNanos;
         if (VERBOSE) {
             long durationMillis = durationNanos / 1_000_000;
-            System.out.println("depth: " + depth);
+            System.out.println("deepestPv: " + (deepestPv - history.size()));
             System.out.println("score: " + score);
             System.out.println(nodes + " nodes in " + durationMillis + " ms (" + Math.round((double) nodes / durationMillis) + "knps)");
             System.out.println("branching: " + Math.log(nodes) / Math.log(depth));
@@ -65,6 +86,10 @@ public class BotImpl {
     private int alphaBeta(State state, HashHistory history, int depth, int alpha, int beta) {
         assert history.lastHash() == state.hash();
         nodes++;
+        boolean isPvNode = alpha + 1 < beta;
+        if (isPvNode) {
+            deepestPv = Math.max(deepestPv, history.size());
+        }
         List<Move> moves = new ArrayList<>();
         moveGen.generateLegalMoves(state, moves::add);
         if (moves.isEmpty()) {
@@ -122,35 +147,46 @@ public class BotImpl {
                     break;
             }
         }
-
-        if (INTERNAL_ITERATIVE_REDUCTIONS && hashMove == null) {
+        if (INTERNAL_ITERATIVE_REDUCTIONS && !isPvNode && hashMove == null) {
             depth--;
         }
         if (depth <= 0) {
             return clamp(eval.evaluate(state) + moves.size(), alpha, beta);
         }
-        moves.sort(new SimpleMoveComparator(state, hashMove));
 
-        entry.raw = packRaw(depth, alpha, UPPER_BOUND);
+        moves.sort(new SimpleMoveComparator(state, hashMove));
+        int bounds = UPPER_BOUND;
+        Move bestMove = null;
         State child = new State(state.zobrist);
         for (int moveIndex = 0; moveIndex < moves.size(); moveIndex++) {
             Move move = moves.get(moveIndex);
             child.copyFrom(state);
             move.applyTo(child);
             history.add(child.hash());
-            int score = -alphaBeta(child, history, depth - 1, -beta, -alpha);
+            int score;
+            if (PRINCIPAL_VARIATION_SEARCH && isPvNode && bounds != UPPER_BOUND) {
+                score = -alphaBeta(child, history, depth - 1, -alpha - 1, -alpha);
+                if (alpha < score) {
+                    score = -alphaBeta(child, history, depth - 1, -beta, -alpha);
+                }
+            } else {
+                score = -alphaBeta(child, history, depth - 1, -beta, -alpha);
+            }
             history.removeLast();
             assert alpha <= score && score <= beta;
             if (score > alpha) {
                 if (score >= beta) {
                     alpha = beta;
-                    entry.raw = packRaw(depth, alpha, LOWER_BOUND, move);
+                    bounds = LOWER_BOUND;
+                    bestMove = move;
                     break;
                 }
                 alpha = score;
-                entry.raw = packRaw(depth, alpha, EXACT_BOUND, move);
+                bounds = EXACT_BOUND;
+                bestMove = move;
             }
         }
+        entry.raw = packRaw(depth, alpha, bounds, bestMove);
         table.store(hash, entry);
         return alpha;
     }
@@ -160,7 +196,6 @@ public class BotImpl {
             if (SquareSet.count(state.bishops() | state.knights()) <= 1) {
                 return true;
             }
-
             if (state.knights() == 0) {
                 long whiteSquareBishops = state.bishops() & SquareSet.WHITE_SQUARES;
                 if (whiteSquareBishops == 0 || whiteSquareBishops == state.bishops()) {
@@ -172,7 +207,11 @@ public class BotImpl {
     }
 
     private long packRaw(int depth, int score, int bounds, Move move) {
-        return ((Move.pack32(move) & 0xffffffffL) << 32) | packRaw(depth, score, bounds);
+        long raw = packRaw(depth, score, bounds);
+        if (move != null) {
+            raw |= (Move.pack32(move) & 0xffffffffL) << 32;
+        }
+        return raw;
     }
 
     private long packRaw(int depth, int score, int bounds) {

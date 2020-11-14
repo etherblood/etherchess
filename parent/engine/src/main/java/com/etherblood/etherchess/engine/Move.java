@@ -229,7 +229,22 @@ public class Move {
 
     @Override
     public String toString() {
-        return Piece.toString(piece) + "(" + Square.toString(from) + "->" + Square.toString(to) + ")";
+        String s = Piece.toString(piece) + "(" + Square.toString(from) + "->" + Square.toString(to) + ")";
+        switch (type) {
+            case PROMOTION_QUEEN:
+                s += Piece.toString(Piece.QUEEN);
+                break;
+            case PROMOTION_ROOK:
+                s += Piece.toString(Piece.ROOK);
+                break;
+            case PROMOTION_BISHOP:
+                s += Piece.toString(Piece.BISHOP);
+                break;
+            case PROMOTION_KNIGHT:
+                s += Piece.toString(Piece.KNIGHT);
+                break;
+        }
+        return s;
     }
 
     @Override

@@ -38,4 +38,8 @@ public class HashHistory {
     public long lastHash() {
         return hashes[next - 1];
     }
+
+    public int size() {
+        return next;
+    }
 }

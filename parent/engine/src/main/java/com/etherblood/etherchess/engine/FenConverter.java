@@ -101,7 +101,7 @@ public class FenConverter {
 
     private void fenPassant(State state, String string) {
         if (string.length() == 2) {
-            state.enPassantSquare = Square.square(string.charAt(0) - 'a', string.charAt(1) - '1');
+            state.enPassantSquare = Square.parse(string);
         }
     }
 
