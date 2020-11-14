@@ -123,21 +123,13 @@ public class BotImpl {
             }
         }
 
-        if (hashMove != null) {
-            int index = moves.indexOf(hashMove);
-            assert index >= 0;
-            moves.set(0, moves.set(index, moves.get(0)));
-        } else if (INTERNAL_ITERATIVE_REDUCTIONS) {
+        if (INTERNAL_ITERATIVE_REDUCTIONS && hashMove == null) {
             depth--;
         }
         if (depth <= 0) {
             return clamp(eval.evaluate(state) + moves.size(), alpha, beta);
         }
-        if (hashMove != null) {
-            moves.subList(1, moves.size()).sort(new SimpleMoveComparator(state));
-        } else {
-            moves.sort(new SimpleMoveComparator(state));
-        }
+        moves.sort(new SimpleMoveComparator(state, hashMove));
 
         entry.raw = packRaw(depth, alpha, UPPER_BOUND);
         State child = new State(state.zobrist);

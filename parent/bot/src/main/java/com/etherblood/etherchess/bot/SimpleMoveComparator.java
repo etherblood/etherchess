@@ -8,13 +8,21 @@ import java.util.Comparator;
 public class SimpleMoveComparator implements Comparator<Move> {
 
     private final State state;
+    private final Move hashMove;
 
-    public SimpleMoveComparator(State state) {
+    public SimpleMoveComparator(State state, Move hashMove) {
         this.state = state;
+        this.hashMove = hashMove;
     }
 
     @Override
     public int compare(Move a, Move b) {
+        if (a.equals(hashMove)) {
+            return -1;
+        }
+        if (b.equals(hashMove)) {
+            return 1;
+        }
         int captureA = state.getSquarePiece(a.to);
         int captureB = state.getSquarePiece(b.to);
         if (captureA != captureB) {
