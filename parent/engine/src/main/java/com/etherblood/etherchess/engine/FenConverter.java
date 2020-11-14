@@ -50,7 +50,7 @@ public class FenConverter {
         builder.append(' ');
         int castling = state.availableCastlings;
         if (!state.isWhite) {
-            castling = Castling.mirror(castling);
+            castling = Castling.mirrorY(castling);
         }
         if (castling == 0) {
             builder.append('-');

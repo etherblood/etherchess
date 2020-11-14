@@ -35,13 +35,22 @@ public class Move {
         assert from != to;
     }
 
-    public static Move unpack(int raw) {
-        assert (raw & 0xffffffff) == raw;
-        return new Move((raw >> 24) & 0xff, (raw >> 16) & 0xff, (raw >> 8) & 0xff, (raw >> 0) & 0xff);
+    public static Move unpack32(int raw) {
+        return new Move((raw >>> 24) & 0xff, (raw >>> 16) & 0xff, (raw >>> 8) & 0xff, (raw >>> 0) & 0xff);
     }
 
-    public static int pack(Move move) {
+    public static int pack32(Move move) {
         return (move.type << 24) | (move.piece << 16) | (move.from << 8) | (move.to << 0);
+    }
+
+    public static Move unpack16(State state, int raw) {
+        assert (raw & 0xffff) == raw;
+        int from = (raw >>> 6) & 0x7f;
+        return new Move((raw >>> 12) & 0xf, state.getSquarePiece(from), from, (raw >>> 0) & 0x7f);
+    }
+
+    public static int pack16(State state, Move move) {
+        return (move.type << 12) | (move.from << 6) | (move.to << 0);
     }
 
     public static Move defaultMove(int piece, int from, int to) {

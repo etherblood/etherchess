@@ -116,7 +116,7 @@ public class State {
         rooks = SquareSet.mirrorY(rooks);
         queens = SquareSet.mirrorY(queens);
 
-        availableCastlings = Castling.mirror(availableCastlings);
+        availableCastlings = Castling.mirrorY(availableCastlings);
         if (enPassantSquare != NO_EN_PASSANT) {
             enPassantSquare = Square.mirrorY(enPassantSquare);
         }
@@ -245,10 +245,6 @@ public class State {
 
     public long queens() {
         return queens;
-    }
-
-    public long piecesHash() {
-        return piecesHash;
     }
 
 }

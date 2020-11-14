@@ -1,9 +1,9 @@
-package com.etherblood.etherchess.bot;
+package com.etherblood.etherchess.bot.evaluation;
 
 import com.etherblood.etherchess.engine.State;
 import com.etherblood.etherchess.engine.util.SquareSet;
 
-public class WoodCount implements Evaluation {
+public class WoodCountEvaluation implements Evaluation {
 
     private static final int QUEEN_SCORE = 900;
     private static final int ROOK_SCORE = 500;

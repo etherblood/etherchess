@@ -98,6 +98,8 @@ public class SquareSet {
     public static final long INNER = ~OUTER;
     public static final long MAIN_DIAGONAL = 0x8040201008040201L;
     public static final long MAIN_ANTIDIAGONAL = 0x102040810204080L;
+    public static final long BLACK_SQUARES = 0x5555555555555555L;
+    public static final long WHITE_SQUARES = ~BLACK_SQUARES;
 
     private static final long[] DIAGONAL = new long[64];
     private static final long[] ANTIDIAGONAL = new long[64];
@@ -173,14 +175,6 @@ public class SquareSet {
         System.out.println();
     }
 
-    public static long empty() {
-        return 0;
-    }
-
-    public static long full() {
-        return ~0;
-    }
-
     public static long of(int square) {
         assert Square.isValid(square);
         return 1L << square;
@@ -192,10 +186,6 @@ public class SquareSet {
 
     public static long clearFirst(long squareSet) {
         return squareSet & (squareSet - 1);
-    }
-
-    public static long lastOf(long squareSet) {
-        return Long.highestOneBit(squareSet);
     }
 
     public static long fileOf(int square) {

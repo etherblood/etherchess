@@ -6,6 +6,8 @@ import com.etherblood.etherchess.engine.util.Piece;
 import com.etherblood.etherchess.engine.util.PieceSquareSet;
 import com.etherblood.etherchess.engine.util.Square;
 import com.etherblood.etherchess.engine.util.SquareSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class MoveGenerator {
@@ -23,6 +25,12 @@ public class MoveGenerator {
         bishopMoves(state, state.bishops() & state.own() & ~pinnedMask, pushMask, captureMask, out);
         rookMoves(state, state.rooks() & state.own() & ~pinnedMask, pushMask, captureMask, out);
         queenMoves(state, state.queens() & state.own() & ~pinnedMask, pushMask, captureMask, out);
+    }
+
+    public List<Move> generateLegalMoves(State state) {
+        List<Move> moves = new ArrayList<>();
+        generateLegalMoves(state, moves::add);
+        return moves;
     }
 
     public void generateLegalMoves(State state, Consumer<Move> out) {

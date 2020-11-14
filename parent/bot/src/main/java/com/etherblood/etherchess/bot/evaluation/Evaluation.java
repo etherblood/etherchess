@@ -1,4 +1,4 @@
-package com.etherblood.etherchess.bot;
+package com.etherblood.etherchess.bot.evaluation;
 
 import com.etherblood.etherchess.engine.State;
 

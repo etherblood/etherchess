@@ -1,5 +1,6 @@
 package com.etherblood.etherchess.bot;
 
+import com.etherblood.etherchess.bot.evaluation.PieceSquareEvaluation;
 import com.etherblood.etherchess.engine.FenConverter;
 import com.etherblood.etherchess.engine.MirrorZobrist;
 import com.etherblood.etherchess.engine.Move;
@@ -10,15 +11,15 @@ import java.util.Random;
 
 public class Main {
     public static void main(String... args) {
-        BotImpl bot = new BotImpl(new AlwaysReplaceTable(25), new WoodCount(), new MoveGenerator());
-        State state = new State(new MirrorZobrist(new Random(12)::nextLong));
-        new FenConverter().fromFen(state, FenConverter.DEFAULT_STARTPOSITION);
+        String fen = FenConverter.DEFAULT_STARTPOSITION;
+        int depth = 7;
 
-        long startNanos = System.nanoTime();
-        Move move = bot.findBest(state, 7);
-        long durationNanos = System.nanoTime() - startNanos;
-        long durationMillis = durationNanos / 1_000_000;
-        System.out.println("in " + durationMillis + " ms");
+        BotImpl bot = new BotImpl(new AlwaysReplaceTable(25), new PieceSquareEvaluation(), new MoveGenerator());
+        State state = new State(new MirrorZobrist(new Random(12)::nextLong));
+        new FenConverter().fromFen(state, fen);
+        HashHistory history = new HashHistory(state.hash());
+
+        Move move = bot.findBest(state, history, depth);
         System.out.println(move);
     }
 }

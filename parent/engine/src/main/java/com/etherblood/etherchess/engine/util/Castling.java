@@ -26,7 +26,7 @@ public class Castling {
         }
     }
 
-    public static int mirror(int availableCastlings) {
+    public static int mirrorY(int availableCastlings) {
         return ((availableCastlings << 2) | (availableCastlings >>> 2)) & 15;
     }
 }
