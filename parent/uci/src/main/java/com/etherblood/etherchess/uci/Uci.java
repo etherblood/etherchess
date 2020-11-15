@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Uci {
     // https://www.shredderchess.com/chess-features/uci-universal-chess-interface.html
@@ -32,6 +33,7 @@ public class Uci {
     private State state;
     private HashHistory history;
     private boolean isDebug = false;
+    private final AtomicReference<Thread> botThread = new AtomicReference<>(null);
 
     public Uci(InputStream in, PrintStream out) {
         this.in = in;
@@ -40,6 +42,7 @@ public class Uci {
     }
 
     private void setTableSize(int mib) {
+        assert botThread.get() == null;
         bot = new BotImpl(new AlwaysReplaceTable(Long.numberOfTrailingZeros(mib * ENTRIES_PER_MIB)), new PieceSquareEvaluation(), new MoveGenerator());
     }
 
@@ -56,7 +59,12 @@ public class Uci {
                         case "quit":
                             return;
                         case "stop":
-                            return;
+                            Thread thread = botThread.get();
+                            if (thread != null) {
+                                thread.interrupt();
+                                botThread.compareAndSet(thread, null);
+                            }
+                            break;
                         case "uci":
                             send("id name Etherchess 0.1.0");
                             send("id author Etherblood");
@@ -163,8 +171,18 @@ public class Uci {
                 depth = Integer.parseInt(it.next());
                 break;
         }
-        Move best = bot.findBest(state, history, depth);
-        send("bestmove " + LongAlgebraicNotation.toLanString(state, best));
+        int botDepth = depth;
+        State botState = state;
+        HashHistory botHistory = history;
+        Thread thread = new Thread(() -> {
+            Move best = bot.findBest(botState, botHistory, botDepth);
+            send("bestmove " + LongAlgebraicNotation.toLanString(botState, best));
+            botThread.set(null);
+        });
+        botThread.set(thread);
+        thread.start();
+        state = null;
+        history = null;
     }
 
     private List<String> tokenize(String line) {
