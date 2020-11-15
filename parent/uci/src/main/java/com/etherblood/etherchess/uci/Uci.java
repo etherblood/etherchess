@@ -2,6 +2,8 @@ package com.etherblood.etherchess.uci;
 
 import com.etherblood.etherchess.bot.BotImpl;
 import com.etherblood.etherchess.bot.HashHistory;
+import com.etherblood.etherchess.bot.SearchResult;
+import com.etherblood.etherchess.bot.SearchStats;
 import com.etherblood.etherchess.bot.evaluation.PieceSquareEvaluation;
 import com.etherblood.etherchess.engine.FenConverter;
 import com.etherblood.etherchess.engine.MirrorZobrist;
@@ -174,9 +176,55 @@ public class Uci {
         int botDepth = depth;
         State botState = state;
         HashHistory botHistory = history;
+        boolean white = botState.isWhite;
         Thread thread = new Thread(() -> {
-            Move best = bot.findBest(botState, botHistory, botDepth);
-            send("bestmove " + LongAlgebraicNotation.toLanString(botState, best));
+            bot.findBest(botState, botHistory, botDepth, new SearchResult() {
+
+                @Override
+                public void stats(SearchStats stats) {
+                    StringBuilder builder = new StringBuilder();
+                    builder.append("info score");
+                    if (stats.depth != null) {
+                        builder.append(" depth " + stats.depth);
+                        if (stats.seldepth != null) {
+                            builder.append(" seldepth " + stats.seldepth);
+                        }
+                    }
+                    if (stats.scoreCp != null) {
+                        builder.append(" score cp " + stats.scoreCp);
+                    } else if (stats.scoreMate != null) {
+                        builder.append(" score mate " + stats.scoreMate);
+                    }
+                    if (stats.nodes != null) {
+                        builder.append(" nodes " + stats.nodes);
+                    }
+                    if (stats.nodes != null && stats.millis != null && stats.millis > 0) {
+                        builder.append(" nps " + (1000 * stats.nodes / stats.millis));
+                    }
+                    if (stats.pv != null) {
+                        if (stats.millis != null) {
+                            builder.append(" time " + stats.millis);
+                        }
+                        builder.append(" pv");
+                        for (int i = 0; i < stats.pv.size(); i++) {
+                            boolean isWhite = white == ((i & 1) == 0);
+                            builder.append(' ');
+                            builder.append(LongAlgebraicNotation.toLanString(isWhite, stats.pv.get(i)));
+                        }
+                    }
+                    send(builder.toString());
+                }
+
+                @Override
+                public void bestMove(Move move) {
+                    send("bestmove " + LongAlgebraicNotation.toLanString(white, move));
+                }
+
+                @Override
+                public void string(String string) {
+                    send("info string " + string);
+                }
+            });
             botThread.set(null);
         });
         botThread.set(thread);

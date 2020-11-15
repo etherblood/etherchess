@@ -58,10 +58,10 @@ public class LongAlgebraicNotation {
         }
     }
 
-    public static String toLanString(State state, Move move) {
+    public static String toLanString(boolean isWhite, Move move) {
         int from = move.from;
         int to = move.to;
-        if (!state.isWhite) {
+        if (!isWhite) {
             from = Square.mirrorY(from);
             to = Square.mirrorY(to);
         }

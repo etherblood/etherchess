@@ -14,6 +14,7 @@ public class AlwaysReplaceTable implements Table {
     public AlwaysReplaceTable(int logSize) {
         this.table = new long[2 << logSize];
         this.indexMask = (2 << logSize) - 2;
+        clear();
     }
 
     @Override

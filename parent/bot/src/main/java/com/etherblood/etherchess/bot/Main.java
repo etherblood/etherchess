@@ -21,8 +21,7 @@ public class Main {
         HashHistory history = new HashHistory(state.hash());
 
         System.out.println(state.toBoardString());
-        Move move = bot.findBest(state, history, depth);
+        Move move = bot.findBest(state, history, depth, new SearchResultPrinter());
         table.printStats();
-        System.out.println(move);
     }
 }

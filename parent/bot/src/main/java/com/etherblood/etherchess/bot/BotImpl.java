@@ -31,7 +31,7 @@ public class BotImpl {
     private final MoveGenerator moveGen;
 
     private long nodes;
-    private long deepestPv;
+    private int selDepth;
 
     public BotImpl(Table table, Evaluation eval, MoveGenerator moveGen) {
         this.table = table;
@@ -39,7 +39,7 @@ public class BotImpl {
         this.moveGen = moveGen;
     }
 
-    public Move findBest(State state, HashHistory history, int depth) {
+    public Move findBest(State state, HashHistory history, int depth, SearchResult result) {
         if (history.lastHash() != state.hash()) {
             throw new IllegalArgumentException("Last hash of history must match current state");
         }
@@ -56,13 +56,13 @@ public class BotImpl {
                 flags.add("id");
             }
             flags.sort(Comparator.naturalOrder());
-            System.out.println("config: " + flags.stream().collect(Collectors.joining(", ")));
-            System.out.println("depth: " + depth);
+            result.string("config: " + flags.stream().collect(Collectors.joining(", ")));
         }
         nodes = 0;
+        selDepth = 0;
         int score = 0;
-        long startNanos = System.nanoTime();
         Move best = null;
+        long startNanos = System.nanoTime();
         TableEntry entry = new TableEntry();
         try {
             for (int i = ITERATIVE_DEEPENING ? 1 : depth; i <= depth; i++) {
@@ -72,21 +72,40 @@ public class BotImpl {
                 } else if (VERBOSE) {
                     System.out.println("move was not stored in table");
                 }
+                long durationNanos = System.nanoTime() - startNanos;
+                SearchStats stats = new SearchStats();
+                stats.depth = i;
+                stats.seldepth = selDepth - history.size();
+                stats.millis = durationNanos / 1_000_000;
+                stats.nodes = nodes;
+                stats.scoreCp = score;
+                stats.pv = collectPv(state, i);
+                result.stats(stats);
             }
         } catch (InterruptedException e) {
             if (VERBOSE) {
                 System.out.println("search interrupted");
             }
         }
-        long durationNanos = System.nanoTime() - startNanos;
-        if (VERBOSE) {
-            long durationMillis = durationNanos / 1_000_000;
-            System.out.println("deepestPv: " + (deepestPv - history.size()));
-            System.out.println("score: " + score);
-            System.out.println(nodes + " nodes in " + durationMillis + " ms (" + Math.round((double) nodes / durationMillis) + "knps)");
-            System.out.println("branching: " + Math.log(nodes) / Math.log(depth));
-        }
+        result.bestMove(best);
         return best;
+    }
+
+    private List<Move> collectPv(State state, int depth) {
+        List<Move> pv = new ArrayList<>();
+        TableEntry entry = new TableEntry();
+        if (depth > 0 && table.load(state.hash(), entry)) {
+            int bounds = unpackBounds(entry.raw);
+            if (bounds == EXACT_BOUND || bounds == LOWER_BOUND) {
+                Move move = unpackMove(entry.raw);
+                pv.add(move);
+                State child = new State(state.zobrist);
+                child.copyFrom(state);
+                move.applyTo(child);
+                pv.addAll(collectPv(child, depth - 1));
+            }
+        }
+        return pv;
     }
 
     private int alphaBeta(State state, HashHistory history, int depth, int alpha, int beta) throws InterruptedException {
@@ -94,7 +113,7 @@ public class BotImpl {
         nodes++;
         boolean isPvNode = alpha + 1 < beta;
         if (isPvNode) {
-            deepestPv = Math.max(deepestPv, history.size());
+            selDepth = Math.max(selDepth, history.size());
         }
         List<Move> moves = new ArrayList<>();
         moveGen.generateLegalMoves(state, moves::add);
