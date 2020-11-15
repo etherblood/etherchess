@@ -5,6 +5,8 @@ import java.util.Arrays;
 
 public class AlwaysReplaceTable implements Table {
 
+    public static final int ENTRY_BYTES = 2 * Long.BYTES;
+
     private final long[] table;
     private final int indexMask;
     private long hits, misses, stores, overwrites;

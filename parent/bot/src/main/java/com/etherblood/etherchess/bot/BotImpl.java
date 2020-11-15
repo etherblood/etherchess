@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 public class BotImpl {
 
-    private static final boolean VERBOSE = true;
+    private static final boolean VERBOSE = false;
     // http://talkchess.com/forum3/viewtopic.php?f=7&t=74769
     private static final boolean INTERNAL_ITERATIVE_REDUCTIONS = true;
     private static final boolean PRINCIPAL_VARIATION_SEARCH = true;
@@ -62,8 +62,21 @@ public class BotImpl {
         nodes = 0;
         int score = 0;
         long startNanos = System.nanoTime();
-        for (int i = ITERATIVE_DEEPENING ? 1 : depth; i <= depth; i++) {
-            score = alphaBeta(state, history, i, -MATE_SCORE - 1, MATE_SCORE + 1);
+        Move best = null;
+        TableEntry entry = new TableEntry();
+        try {
+            for (int i = ITERATIVE_DEEPENING ? 1 : depth; i <= depth; i++) {
+                score = alphaBeta(state, history, i, -MATE_SCORE - 1, MATE_SCORE + 1);
+                if (table.load(state.hash(), entry)) {
+                    best = unpackMove(entry.raw);
+                } else if (VERBOSE) {
+                    System.out.println("move was not stored in table");
+                }
+            }
+        } catch (InterruptedException e) {
+            if (VERBOSE) {
+                System.out.println("search interrupted");
+            }
         }
         long durationNanos = System.nanoTime() - startNanos;
         if (VERBOSE) {
@@ -73,17 +86,10 @@ public class BotImpl {
             System.out.println(nodes + " nodes in " + durationMillis + " ms (" + Math.round((double) nodes / durationMillis) + "knps)");
             System.out.println("branching: " + Math.log(nodes) / Math.log(depth));
         }
-        TableEntry entry = new TableEntry();
-        if (!table.load(state.hash(), entry)) {
-            if (VERBOSE) {
-                System.out.println("Move was not stored after search, returning first possible move.");
-            }
-            return moveGen.generateLegalMoves(state).get(0);
-        }
-        return unpackMove(entry.raw);
+        return best;
     }
 
-    private int alphaBeta(State state, HashHistory history, int depth, int alpha, int beta) {
+    private int alphaBeta(State state, HashHistory history, int depth, int alpha, int beta) throws InterruptedException {
         assert history.lastHash() == state.hash();
         nodes++;
         boolean isPvNode = alpha + 1 < beta;
@@ -103,6 +109,9 @@ public class BotImpl {
         }
         if (insufficientMatingMaterial(state)) {
             return clamp(0, alpha, beta);
+        }
+        if (depth >= 4 && Thread.interrupted()) {
+            throw new InterruptedException();
         }
 
         Move hashMove = null;

@@ -8,6 +8,7 @@
     <modules>
         <module>engine</module>
         <module>bot</module>
+        <module>uci</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

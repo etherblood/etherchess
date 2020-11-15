@@ -75,6 +75,7 @@ public class Move {
 
     public void applyTo(State state) {
         assert state.getSquarePiece(from) == piece;
+        assert (state.own() & SquareSet.of(from)) != 0;
         assert (state.own() & SquareSet.of(to)) == 0;
         state.fiftyMovesCounter++;
         switch (type) {

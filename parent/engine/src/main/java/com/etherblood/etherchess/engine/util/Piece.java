@@ -18,6 +18,31 @@ public class Piece {
         return Character.toString(toLowercaseCharacter(piece));
     }
 
+    public static int fromCharacter(char character) {
+        switch (character) {
+            case 'P':
+            case 'p':
+                return PAWN;
+            case 'K':
+            case 'k':
+                return KING;
+            case 'N':
+            case 'n':
+                return KNIGHT;
+            case 'B':
+            case 'b':
+                return BISHOP;
+            case 'R':
+            case 'r':
+                return ROOK;
+            case 'Q':
+            case 'q':
+                return QUEEN;
+            default:
+                return EMPTY;
+        }
+    }
+
     public static char toCharacter(int piece, boolean white) {
         char c = toLowercaseCharacter(piece);
         if (white) {
