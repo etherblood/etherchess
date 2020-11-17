@@ -48,7 +48,7 @@ public class UciEngineWrapper implements UciEngine {
     }
 
     @Override
-    public void think(SearchParams params, SearchResult result) {
+    public void go(SearchParams params, SearchResult result) {
         BotImpl bot = new BotImpl(table, new PieceSquareEvaluation(), new MoveGenerator());
         bot.findBest(state, history, params.getDepth(), result);
     }

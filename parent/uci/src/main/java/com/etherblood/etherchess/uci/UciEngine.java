@@ -12,7 +12,7 @@ public interface UciEngine {
 
     void setPosition(String fen, List<String> moves);
 
-    void think(SearchParams params, SearchResult result);
+    void go(SearchParams params, SearchResult result);
 
     void setTableSize(int mib);
 

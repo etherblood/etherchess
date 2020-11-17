@@ -83,7 +83,7 @@ public class UciTest {
             result.stats(SearchStats.builder().depth(secondDepth).build());
             result.bestMove(bestMove);
             return null;
-        }).when(engine).think(Mockito.any(), Mockito.any());
+        }).when(engine).go(Mockito.any(), Mockito.any());
 
         toEngine.accept("position startpos");
         toEngine.accept("isready");

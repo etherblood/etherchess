@@ -156,7 +156,7 @@ public class Uci implements Runnable {
         Thread thread = new Thread(() -> {
             try {
                 LOG.info("thinking...");
-                engine.think(builder.build(), new SearchResult() {
+                engine.go(builder.build(), new SearchResult() {
 
                     @Override
                     public void stats(SearchStats stats) {
