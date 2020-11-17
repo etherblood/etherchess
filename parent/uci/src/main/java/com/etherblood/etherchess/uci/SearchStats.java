@@ -1,15 +1,19 @@
-package com.etherblood.etherchess.bot;
+package com.etherblood.etherchess.uci;
 
-import com.etherblood.etherchess.engine.Move;
 import java.util.List;
+import lombok.Builder;
+import lombok.Getter;
 
+@Builder
+@Getter
 public class SearchStats {
 
     public Integer depth;
     public Integer seldepth;
     public Integer scoreCp;
     public Integer scoreMate;
+    public Integer hashPermill;
     public Long nodes;
     public Long millis;
-    public List<Move> pv;
+    public List<String> pv;
 }

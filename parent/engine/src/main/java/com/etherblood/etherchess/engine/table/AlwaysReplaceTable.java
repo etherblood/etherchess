@@ -1,11 +1,13 @@
 package com.etherblood.etherchess.engine.table;
 
 import com.etherblood.etherchess.engine.stats.StatUtil;
+import java.io.PrintStream;
 import java.util.Arrays;
 
 public class AlwaysReplaceTable implements Table {
 
     public static final int ENTRY_BYTES = 2 * Long.BYTES;
+    public static final long EMPTY_RAW = 0;
 
     private final long[] table;
     private final int indexMask;
@@ -31,8 +33,9 @@ public class AlwaysReplaceTable implements Table {
 
     @Override
     public void store(long hash, TableEntry entry) {
+        assert entry.raw != EMPTY_RAW;
         int index = indexMask & (int) hash;
-        if (table[index] == hash) {
+        if (table[index + 1] != EMPTY_RAW) {
             overwrites++;
         }
         table[index] = hash;
@@ -40,27 +43,43 @@ public class AlwaysReplaceTable implements Table {
         stores++;
     }
 
-    public void printStats() {
-        long size = 2 * table.length;
-        System.out.println("Table stats");
-        System.out.println(" size: " + size + " (" + StatUtil.humanReadableByteCountBin(size * Integer.BYTES) + ")");
-        long full = stores - overwrites;
-        long empty = size - full;
-        System.out.println("  empty: " + empty + " (" + StatUtil.toPercentage(empty, size, 1) + ")");
-        System.out.println("  full: " + full + " (" + StatUtil.toPercentage(full, size, 1) + ")");
-        System.out.println(" hits: " + hits + " (" + StatUtil.toPercentage(hits, hits + misses, 1) + ")");
-        System.out.println(" misses: " + misses + " (" + StatUtil.toPercentage(misses, hits + misses, 1) + ")");
-        System.out.println(" loads: " + (hits + misses));
-        System.out.println(" stores: " + stores);
-        System.out.println(" overwrites: " + overwrites);
-        System.out.println(" stores/size: " + StatUtil.toPercentage(stores, size, 1));
+    @Override
+    public void remove(long hash) {
+        int index = indexMask & (int) hash;
+        if (table[index] == hash) {
+            table[index] = ~hash;
+            table[index + 1] = EMPTY_RAW;
+        }
     }
 
+    public void printStats(PrintStream out) {
+        long size = table.length / 2;
+        out.println("Table stats");
+        out.println(" size: " + size + " (" + StatUtil.humanReadableByteCountBin(size * ENTRY_BYTES) + ")");
+        long full = stores - overwrites;
+        long empty = size - full;
+        out.println("  empty: " + empty + " (" + StatUtil.toPercentage(empty, size, 1) + ")");
+        out.println("  full: " + full + " (" + StatUtil.toPercentage(full, size, 1) + ")");
+        out.println(" hits: " + hits + " (" + StatUtil.toPercentage(hits, hits + misses, 1) + ")");
+        out.println(" misses: " + misses + " (" + StatUtil.toPercentage(misses, hits + misses, 1) + ")");
+        out.println(" loads: " + (hits + misses));
+        out.println(" stores: " + stores);
+        out.println(" overwrites: " + overwrites);
+        out.println(" stores/size: " + StatUtil.toPercentage(stores, size, 1));
+    }
+
+    @Override
     public final void clear() {
-        Arrays.fill(table, 0);
-        table[0] = ~0; // ensure 'hash == table[indexMask & (int) hash]' is false for all entries to prevent invalid loads
+        Arrays.fill(table, EMPTY_RAW);
         hits = 0;
         misses = 0;
         stores = 0;
+    }
+
+    @Override
+    public int fillPermill() {
+        long size = table.length / 2;
+        long full = stores - overwrites;
+        return (int) (1000 * full / size);
     }
 }

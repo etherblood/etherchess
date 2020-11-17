@@ -1,5 +1,7 @@
-package com.etherblood.etherchess.bot;
+package com.etherblood.etherchess.sandbox;
 
+import com.etherblood.etherchess.bot.BotImpl;
+import com.etherblood.etherchess.bot.HashHistory;
 import com.etherblood.etherchess.bot.evaluation.PieceSquareEvaluation;
 import com.etherblood.etherchess.engine.FenConverter;
 import com.etherblood.etherchess.engine.MirrorZobrist;
@@ -9,7 +11,7 @@ import com.etherblood.etherchess.engine.State;
 import com.etherblood.etherchess.engine.table.AlwaysReplaceTable;
 import java.util.Random;
 
-public class Main {
+public class BestFirstMove {
     public static void main(String... args) {
         String fen = FenConverter.DEFAULT_STARTPOSITION;
         int depth = 9;
@@ -21,7 +23,7 @@ public class Main {
         HashHistory history = new HashHistory(state.hash());
 
         System.out.println(state.toBoardString());
-        Move move = bot.findBest(state, history, depth, new SearchResultPrinter());
-        table.printStats();
+        Move move = bot.findBest(state, history, depth, new SearchResultLogger());
+        table.printStats(System.out);
     }
 }

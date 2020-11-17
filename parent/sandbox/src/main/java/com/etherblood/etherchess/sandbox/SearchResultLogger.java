@@ -1,8 +1,10 @@
-package com.etherblood.etherchess.bot;
+package com.etherblood.etherchess.sandbox;
 
-import com.etherblood.etherchess.engine.Move;
 
-public class SearchResultPrinter implements SearchResult {
+import com.etherblood.etherchess.uci.SearchResult;
+import com.etherblood.etherchess.uci.SearchStats;
+
+public class SearchResultLogger implements SearchResult {
     @Override
     public void stats(SearchStats stats) {
         System.out.println("depth: " + stats.depth + " (seldepth: " + (stats.seldepth) + ")");
@@ -13,7 +15,7 @@ public class SearchResultPrinter implements SearchResult {
     }
 
     @Override
-    public void bestMove(Move move) {
+    public void bestMove(String move) {
         System.out.println(move);
         System.out.println();
     }

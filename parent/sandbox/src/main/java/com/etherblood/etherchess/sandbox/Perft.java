@@ -1,4 +1,4 @@
-package com.etherblood.etherchess.engine.sandbox;
+package com.etherblood.etherchess.sandbox;
 
 import com.etherblood.etherchess.engine.FenConverter;
 import com.etherblood.etherchess.engine.MirrorZobrist;
@@ -6,7 +6,6 @@ import com.etherblood.etherchess.engine.Move;
 import com.etherblood.etherchess.engine.MoveGenerator;
 import com.etherblood.etherchess.engine.State;
 import com.etherblood.etherchess.engine.table.AlwaysReplaceTable;
-import com.etherblood.etherchess.engine.table.NoopTable;
 import com.etherblood.etherchess.engine.table.Table;
 import com.etherblood.etherchess.engine.table.TableEntry;
 import java.util.ArrayList;
@@ -14,8 +13,8 @@ import java.util.Random;
 
 public class Perft {
 
-    //    private final Table table = new AlwaysReplaceTable(25);
-    private final Table table = new NoopTable();
+    private final Table table = new AlwaysReplaceTable(25);
+    //    private final Table table = new NoopTable();
     private final MoveGenerator moveGen = new MoveGenerator();
 
     public static void main(String[] args) {
@@ -42,7 +41,7 @@ public class Perft {
         System.out.println("in " + durationMillis + " ms (" + Math.round((double) sum / durationMillis) + " knps)");
         System.out.println();
         if (perft.table instanceof AlwaysReplaceTable) {
-            ((AlwaysReplaceTable) perft.table).printStats();
+            ((AlwaysReplaceTable) perft.table).printStats(System.out);
         }
     }
 

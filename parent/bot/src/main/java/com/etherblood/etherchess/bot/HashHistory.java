@@ -7,7 +7,7 @@ public class HashHistory {
     private long[] hashes = new long[64];
 
     public HashHistory(long initialHash) {
-        add(initialHash);
+        reset(initialHash);
     }
 
     public void add(long hash) {
@@ -41,5 +41,10 @@ public class HashHistory {
 
     public int size() {
         return next;
+    }
+
+    public void reset(long initialHash) {
+        next = 0;
+        add(initialHash);
     }
 }

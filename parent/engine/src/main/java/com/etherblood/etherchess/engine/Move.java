@@ -36,6 +36,9 @@ public class Move {
     }
 
     public static Move unpack32(int raw) {
+        if (raw == 0) {
+            return null;
+        }
         return new Move((raw >>> 24) & 0xff, (raw >>> 16) & 0xff, (raw >>> 8) & 0xff, (raw >>> 0) & 0xff);
     }
 
