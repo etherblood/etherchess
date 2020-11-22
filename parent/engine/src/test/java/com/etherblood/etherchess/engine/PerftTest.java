@@ -25,8 +25,9 @@ public class PerftTest {
 
     @Test
     public void perftFile() throws IOException {
-        // https://github.com/elcabesa/vajolet/blob/develop/tests/perft.txt
-        int maxPerft = 10_000;
+        // https://github.com/elcabesa/vajolet/blob/master/tests/perft.txt
+
+        int maxPerft = 10_000;// limit count so tests finish reasonably fast
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("perft.txt")) {
             Scanner scanner = new Scanner(is);
             while (scanner.hasNext()) {

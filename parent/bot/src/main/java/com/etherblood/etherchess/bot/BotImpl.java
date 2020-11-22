@@ -21,10 +21,10 @@ public class BotImpl {
 
     private static final Logger LOG = LoggerFactory.getLogger(BotImpl.class);
 
-    // http://talkchess.com/forum3/viewtopic.php?f=7&t=74769
-    private static final boolean INTERNAL_ITERATIVE_REDUCTIONS = true;
     private static final boolean PRINCIPAL_VARIATION_SEARCH = true;
     private static final boolean ITERATIVE_DEEPENING = true;
+    // http://talkchess.com/forum3/viewtopic.php?f=7&t=74769
+    private static final boolean INTERNAL_ITERATIVE_REDUCTIONS = true;
 
     private static final int UNKNOWN_BOUND = 0;
     private static final int LOWER_BOUND = 1;
@@ -43,25 +43,23 @@ public class BotImpl {
         this.table = table;
         this.eval = eval;
         this.moveGen = moveGen;
+        List<String> flags = new ArrayList<>();
+        if (INTERNAL_ITERATIVE_REDUCTIONS) {
+            flags.add("iir");
+        }
+        if (PRINCIPAL_VARIATION_SEARCH) {
+            flags.add("pvs");
+        }
+        if (ITERATIVE_DEEPENING) {
+            flags.add("id");
+        }
+        flags.sort(Comparator.naturalOrder());
+        LOG.info("config: " + flags.stream().collect(Collectors.joining(", ")));
     }
 
     public Move findBest(State state, HashHistory history, int depth, SearchResult result) {
         if (history.lastHash() != state.hash()) {
             throw new IllegalArgumentException("Last hash of history must match current state");
-        }
-        if (LOG.isInfoEnabled()) {
-            List<String> flags = new ArrayList<>();
-            if (INTERNAL_ITERATIVE_REDUCTIONS) {
-                flags.add("iir");
-            }
-            if (PRINCIPAL_VARIATION_SEARCH) {
-                flags.add("pvs");
-            }
-            if (ITERATIVE_DEEPENING) {
-                flags.add("id");
-            }
-            flags.sort(Comparator.naturalOrder());
-            LOG.info("config: " + flags.stream().collect(Collectors.joining(", ")));
         }
         nodes = 0;
         selDepth = 0;
@@ -124,77 +122,110 @@ public class BotImpl {
     }
 
     private int alphaBeta(State state, HashHistory history, int depth, int alpha, int beta) throws InterruptedException {
-        assert history.lastHash() == state.hash();
+        SearchContext context = new SearchContext();
+        context.state = state;
+        context.history = history;
+        context.depth = depth;
+        context.alpha = alpha;
+        context.beta = beta;
+        context.moves = new ArrayList<>();
+        return alphaBeta(context);
+    }
+
+    private int alphaBeta(SearchContext context) throws InterruptedException {
+        assert context.history.lastHash() == context.state.hash();
         nodes++;
-        boolean isPvNode = alpha + 1 < beta;
-        int ply = history.size();
-        if (isPvNode) {
-            selDepth = Math.max(selDepth, ply);
+        context.isRootNode = startPly == context.ply();
+        context.isPvNode = context.alpha + 1 < context.beta;
+        if (context.isPvNode) {
+            selDepth = Math.max(selDepth, context.ply());
         }
-        List<Move> moves = new ArrayList<>();
-        moveGen.generateLegalMoves(state, moves::add);
-        if (moves.isEmpty()) {
-            assert ply != startPly;
-            if (moveGen.findOpponentCheckers(state) != 0) {
-                return clamp(Scores.mateLossScore(ply), alpha, beta);
-            }
-            return clamp(0, alpha, beta);
+        moveGen.generateLegalMoves(context.state, context.moves::add);
+        if (isTerminal(context)) {
+            return context.alpha;
         }
-        if (history.isDraw(state.fiftyMovesCounter)) {
-            assert ply != startPly;
-            return clamp(0, alpha, beta);
+        if (loadTable(context)) {
+            return context.alpha;
         }
-        if (insufficientMatingMaterial(state)) {
-            assert ply != startPly;
-            return clamp(0, alpha, beta);
+        if (depthReductions(context)) {
+            return context.alpha;
         }
-        if (depth >= 4 && Thread.interrupted()) {
+        if (context.depth >= 4 && Thread.interrupted()) {
             throw new InterruptedException();
         }
+        searchChilds(context);
+        storeTable(context);
+        return context.alpha;
+    }
 
-        Move hashMove = null;
-        long hash = state.hash();
+    private boolean isTerminal(SearchContext context) {
+        if (context.moves.isEmpty()) {
+            assert context.ply() != startPly;
+            if (moveGen.findOpponentCheckers(context.state) != 0) {
+                context.alpha = clamp(Scores.mateLossScore(context.ply()), context.alpha, context.beta);
+                return true;
+            }
+            context.alpha = clamp(0, context.alpha, context.beta);
+            return true;
+        }
+        if (context.history.isDraw(context.state.fiftyMovesCounter)) {
+            assert context.ply() != startPly;
+            context.alpha = clamp(0, context.alpha, context.beta);
+            return true;
+        }
+        if (!context.isRootNode && insufficientMatingMaterial(context.state)) {
+            assert context.ply() != startPly;
+            context.alpha = clamp(0, context.alpha, context.beta);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean loadTable(SearchContext context) {
+        long hash = context.state.hash();
         TableEntry entry = new TableEntry();
         if (table.load(hash, entry)) {
             switch (unpackBounds(entry.raw)) {
                 case UPPER_BOUND: {
                     int entryDepth = unpackDepth(entry.raw);
-                    if (entryDepth >= depth) {
-                        int score = unpackScore(entry.raw, ply);
-                        if (score < beta) {
-                            if (score <= alpha) {
-                                assert ply != startPly;
-                                return alpha;
+                    if (!context.isRootNode && entryDepth >= context.depth) {
+                        int score = unpackScore(entry.raw, context.ply());
+                        if (score < context.beta) {
+                            if (score <= context.alpha) {
+                                assert context.ply() != startPly;
+                                return true;
                             }
-                            beta = score;
+                            context.beta = score;
                         }
                     }
-                    hashMove = unpackMove(entry.raw);
+                    context.hashMove = unpackMove(entry.raw);
                     break;
                 }
                 case LOWER_BOUND: {
                     int entryDepth = unpackDepth(entry.raw);
-                    if (entryDepth >= depth) {
-                        int score = unpackScore(entry.raw, ply);
-                        if (score > alpha) {
-                            if (score >= beta) {
-                                assert ply != startPly;
-                                return beta;
+                    if (!context.isRootNode && entryDepth >= context.depth) {
+                        int score = unpackScore(entry.raw, context.ply());
+                        if (score > context.alpha) {
+                            if (score >= context.beta) {
+                                assert context.ply() != startPly;
+                                context.alpha = context.beta;
+                                return true;
                             }
-                            alpha = score;
+                            context.alpha = score;
                         }
                     }
-                    hashMove = unpackMove(entry.raw);
-                    assert hashMove != null;
+                    context.hashMove = unpackMove(entry.raw);
+                    assert context.hashMove != null;
                     break;
                 }
                 case EXACT_BOUND: {
                     int entryDepth = unpackDepth(entry.raw);
-                    if (entryDepth >= depth) {
-                        return clamp(unpackScore(entry.raw, ply), alpha, beta);
+                    if (!context.isRootNode && entryDepth >= context.depth) {
+                        context.alpha = clamp(unpackScore(entry.raw, context.ply()), context.alpha, context.beta);
+                        return true;
                     }
-                    hashMove = unpackMove(entry.raw);
-                    assert hashMove != null;
+                    context.hashMove = unpackMove(entry.raw);
+                    assert context.hashMove != null;
                     break;
                 }
                 default:
@@ -202,50 +233,62 @@ public class BotImpl {
                     break;
             }
         }
-        if (INTERNAL_ITERATIVE_REDUCTIONS && !isPvNode && hashMove == null) {
-            depth--;
-        }
-        if (depth <= 0) {
-            assert ply != startPly;
-            return clamp(eval.evaluate(state) + moves.size(), alpha, beta);
-        }
+        return false;
+    }
 
-        moves.sort(new SimpleMoveComparator(state, hashMove));
-        int bounds = UPPER_BOUND;
-        Move bestMove = hashMove;
-        State child = new State(state.zobrist);
-        for (int moveIndex = 0; moveIndex < moves.size(); moveIndex++) {
-            Move move = moves.get(moveIndex);
-            child.copyFrom(state);
+    private boolean depthReductions(SearchContext context) {
+        if (INTERNAL_ITERATIVE_REDUCTIONS && !context.isPvNode && context.hashMove == null) {
+            context.depth--;
+        }
+        if (context.depth <= 0) {
+            assert context.ply() != startPly;
+            context.alpha = clamp(eval.evaluate(context.state) + context.moves.size(), context.alpha, context.beta);
+            return true;
+        }
+        return false;
+    }
+
+    private void searchChilds(SearchContext context) throws InterruptedException {
+        context.moves.sort(new SimpleMoveComparator(context.state, context.hashMove));
+        context.bounds = UPPER_BOUND;
+        context.bestMove = context.hashMove;
+        State child = new State(context.state.zobrist);
+        for (int moveIndex = 0; moveIndex < context.moves.size(); moveIndex++) {
+            Move move = context.moves.get(moveIndex);
+            child.copyFrom(context.state);
             move.applyTo(child);
-            history.add(child.hash());
+            context.history.add(child.hash());
             int score;
-            if (PRINCIPAL_VARIATION_SEARCH && isPvNode && bounds != UPPER_BOUND) {
-                score = -alphaBeta(child, history, depth - 1, -alpha - 1, -alpha);
-                if (alpha < score) {
-                    score = -alphaBeta(child, history, depth - 1, -beta, -alpha);
+            if (PRINCIPAL_VARIATION_SEARCH && context.isPvNode && context.bounds != UPPER_BOUND) {
+                score = -alphaBeta(child, context.history, context.depth - 1, -context.alpha - 1, -context.alpha);
+                if (context.alpha < score) {
+                    score = -alphaBeta(child, context.history, context.depth - 1, -context.beta, -context.alpha);
                 }
             } else {
-                score = -alphaBeta(child, history, depth - 1, -beta, -alpha);
+                score = -alphaBeta(child, context.history, context.depth - 1, -context.beta, -context.alpha);
             }
-            history.removeLast();
-            assert alpha <= score && score <= beta;
-            if (score > alpha) {
-                if (score >= beta) {
-                    alpha = beta;
-                    bounds = LOWER_BOUND;
-                    bestMove = move;
+            context.history.removeLast();
+            assert context.alpha <= score && score <= context.beta;
+            if (score > context.alpha) {
+                if (score >= context.beta) {
+                    context.alpha = context.beta;
+                    context.bounds = LOWER_BOUND;
+                    context.bestMove = move;
                     break;
                 }
-                alpha = score;
-                bounds = EXACT_BOUND;
-                bestMove = move;
+                context.alpha = score;
+                context.bounds = EXACT_BOUND;
+                context.bestMove = move;
             }
         }
-        assert ply != startPly || bounds != UPPER_BOUND;
-        entry.raw = packRaw(depth, alpha, bounds, bestMove, ply);
-        table.store(hash, entry);
-        return alpha;
+        assert context.ply() != startPly || context.bounds != UPPER_BOUND;
+    }
+
+    private void storeTable(SearchContext context) {
+        assert context.ply() != startPly || context.bounds != UPPER_BOUND;
+        TableEntry entry = new TableEntry();
+        entry.raw = packRaw(context.depth, context.alpha, context.bounds, context.bestMove, context.ply());
+        table.store(context.state.hash(), entry);
     }
 
     private boolean insufficientMatingMaterial(State state) {
