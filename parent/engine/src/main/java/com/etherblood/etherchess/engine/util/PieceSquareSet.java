@@ -162,18 +162,18 @@ public class PieceSquareSet {
     }
 
 
-    private static long positiveRay(int square, long occupied, long[] squareRays) {
+    private static long positiveRay(int square, long occupied, long[] squareToRay) {
         // https://talkchess.com/forum3/viewtopic.php?t=78693
-        long ray = squareRays[square];
+        long ray = squareToRay[square];
         int obstacle = Square.firstOf((ray & occupied) | SquareSet.H8);
-        return ray ^ squareRays[obstacle];
+        return ray ^ squareToRay[obstacle];
     }
 
-    private static long negativeRay(int square, long occupied, long[] squareRays) {
+    private static long negativeRay(int square, long occupied, long[] squareToRay) {
         // https://talkchess.com/forum3/viewtopic.php?t=78693
-        long ray = squareRays[square];
+        long ray = squareToRay[square];
         int obstacle = Square.lastOf((ray & occupied) | SquareSet.A1);
-        return ray ^ squareRays[obstacle];
+        return ray ^ squareToRay[obstacle];
     }
 
 
