@@ -32,10 +32,6 @@ public class State {
     }
 
     public void clear() {
-        _clear();
-    }
-
-    private void _clear() {
         own = 0;
         opp = 0;
         pawns = 0;
@@ -134,46 +130,26 @@ public class State {
     }
 
     private long getPieceSquareSet(int piece) {
-        switch (piece) {
-            case Piece.PAWN:
-                return pawns;
-            case Piece.KING:
-                return kings;
-            case Piece.KNIGHT:
-                return knights;
-            case Piece.BISHOP:
-                return bishops;
-            case Piece.ROOK:
-                return rooks;
-            case Piece.QUEEN:
-                return queens;
-            default:
-                throw new AssertionError(piece);
-        }
+        return switch (piece) {
+            case Piece.PAWN -> pawns;
+            case Piece.KING -> kings;
+            case Piece.KNIGHT -> knights;
+            case Piece.BISHOP -> bishops;
+            case Piece.ROOK -> rooks;
+            case Piece.QUEEN -> queens;
+            default -> throw new AssertionError(piece);
+        };
     }
 
     private void togglePieceSquareSet(int piece, long squareSet) {
         switch (piece) {
-            case Piece.PAWN:
-                pawns ^= squareSet;
-                break;
-            case Piece.KING:
-                kings ^= squareSet;
-                break;
-            case Piece.KNIGHT:
-                knights ^= squareSet;
-                break;
-            case Piece.BISHOP:
-                bishops ^= squareSet;
-                break;
-            case Piece.ROOK:
-                rooks ^= squareSet;
-                break;
-            case Piece.QUEEN:
-                queens ^= squareSet;
-                break;
-            default:
-                throw new AssertionError(piece);
+            case Piece.PAWN -> pawns ^= squareSet;
+            case Piece.KING -> kings ^= squareSet;
+            case Piece.KNIGHT -> knights ^= squareSet;
+            case Piece.BISHOP -> bishops ^= squareSet;
+            case Piece.ROOK -> rooks ^= squareSet;
+            case Piece.QUEEN -> queens ^= squareSet;
+            default -> throw new AssertionError(piece);
         }
     }
 

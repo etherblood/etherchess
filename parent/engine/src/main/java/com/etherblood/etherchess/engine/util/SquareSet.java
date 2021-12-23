@@ -104,14 +104,14 @@ public class SquareSet {
     private static final long[] DIAGONAL = new long[64];
     private static final long[] ANTIDIAGONAL = new long[64];
 
-    private static final long[] NORTH_RAY = new long[64];
-    private static final long[] NORTHEAST_RAY = new long[64];
-    private static final long[] EAST_RAY = new long[64];
-    private static final long[] SOUTHEAST_RAY = new long[64];
-    private static final long[] SOUTH_RAY = new long[64];
-    private static final long[] SOUTHWEST_RAY = new long[64];
-    private static final long[] WEST_RAY = new long[64];
-    private static final long[] NORTHWEST_RAY = new long[64];
+    static final long[] NORTH_RAY = new long[64];
+    static final long[] NORTHEAST_RAY = new long[64];
+    static final long[] EAST_RAY = new long[64];
+    static final long[] SOUTHEAST_RAY = new long[64];
+    static final long[] SOUTH_RAY = new long[64];
+    static final long[] SOUTHWEST_RAY = new long[64];
+    static final long[] WEST_RAY = new long[64];
+    static final long[] NORTHWEST_RAY = new long[64];
 
     static {
         precomputeDiagonals();

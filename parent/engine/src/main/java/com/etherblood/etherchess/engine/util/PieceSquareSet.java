@@ -128,41 +128,54 @@ public class PieceSquareSet {
                 | southWestRay(square, occupied);
     }
 
-    public static long southEastRay(int square, long occupied) {
-        return SquareSet.reverse(northWestRay(Square.reverse(square), SquareSet.reverse(occupied)));
-    }
-
-    public static long northWestRay(int square, long occupied) {
-        return rays(square, SquareSet.antiDiagonalOf(square), occupied);
-    }
-
-    public static long southWestRay(int square, long occupied) {
-        return SquareSet.reverse(northEastRay(Square.reverse(square), SquareSet.reverse(occupied)));
-    }
-
-    public static long northEastRay(int square, long occupied) {
-        return rays(square, SquareSet.diagonalOf(square), occupied);
-    }
-
-    public static long westRay(int square, long occupied) {
-        return SquareSet.reverse(eastRay(Square.reverse(square), SquareSet.reverse(occupied)));
-    }
-
-    public static long eastRay(int square, long occupied) {
-        return rays(square, SquareSet.rankOf(square), occupied);
+    public static long northRay(int square, long occupied) {
+        return positiveRay(square, occupied, SquareSet.NORTH_RAY);
     }
 
     public static long southRay(int square, long occupied) {
-        return SquareSet.reverse(northRay(Square.reverse(square), SquareSet.reverse(occupied)));
+        return negativeRay(square, occupied, SquareSet.SOUTH_RAY);
     }
 
-    public static long northRay(int square, long occupied) {
-        return rays(square, SquareSet.fileOf(square), occupied);
+    public static long eastRay(int square, long occupied) {
+        return positiveRay(square, occupied, SquareSet.EAST_RAY);
     }
 
-    public static long rays(int square, long mask, long occupied) {
-        return (((occupied & mask) - 2 * SquareSet.of(square)) ^ occupied) & mask;
+    public static long westRay(int square, long occupied) {
+        return negativeRay(square, occupied, SquareSet.WEST_RAY);
     }
+
+
+    public static long northWestRay(int square, long occupied) {
+        return positiveRay(square, occupied, SquareSet.NORTHWEST_RAY);
+    }
+
+    public static long southWestRay(int square, long occupied) {
+        return negativeRay(square, occupied, SquareSet.SOUTHWEST_RAY);
+    }
+
+    public static long northEastRay(int square, long occupied) {
+        return positiveRay(square, occupied, SquareSet.NORTHEAST_RAY);
+    }
+
+    public static long southEastRay(int square, long occupied) {
+        return negativeRay(square, occupied, SquareSet.SOUTHEAST_RAY);
+    }
+
+
+    private static long positiveRay(int square, long occupied, long[] squareRays) {
+        // https://talkchess.com/forum3/viewtopic.php?t=78693
+        long ray = squareRays[square];
+        int obstacle = Square.firstOf((ray & occupied) | SquareSet.H8);
+        return ray ^ squareRays[obstacle];
+    }
+
+    private static long negativeRay(int square, long occupied, long[] squareRays) {
+        // https://talkchess.com/forum3/viewtopic.php?t=78693
+        long ray = squareRays[square];
+        int obstacle = Square.lastOf((ray & occupied) | SquareSet.A1);
+        return ray ^ squareRays[obstacle];
+    }
+
 
     public static long raySquaresBetween(int from, int to) {
         assert Square.isValid(from);
@@ -172,25 +185,16 @@ public class PieceSquareSet {
 
     public static long directionRay(int direction, int square, long occupied) {
         assert Direction.assertValid(direction);
-        switch (direction) {
-            case Direction.NORTH:
-                return northRay(square, occupied);
-            case Direction.NORTH_EAST:
-                return northEastRay(square, occupied);
-            case Direction.EAST:
-                return eastRay(square, occupied);
-            case Direction.SOUTH_EAST:
-                return southEastRay(square, occupied);
-            case Direction.SOUTH:
-                return southRay(square, occupied);
-            case Direction.SOUTH_WEST:
-                return southWestRay(square, occupied);
-            case Direction.WEST:
-                return westRay(square, occupied);
-            case Direction.NORTH_WEST:
-                return northWestRay(square, occupied);
-            default:
-                throw new AssertionError(direction);
-        }
+        return switch (direction) {
+            case Direction.NORTH -> northRay(square, occupied);
+            case Direction.NORTH_EAST -> northEastRay(square, occupied);
+            case Direction.EAST -> eastRay(square, occupied);
+            case Direction.SOUTH_EAST -> southEastRay(square, occupied);
+            case Direction.SOUTH -> southRay(square, occupied);
+            case Direction.SOUTH_WEST -> southWestRay(square, occupied);
+            case Direction.WEST -> westRay(square, occupied);
+            case Direction.NORTH_WEST -> northWestRay(square, occupied);
+            default -> throw new AssertionError(direction);
+        };
     }
 }
