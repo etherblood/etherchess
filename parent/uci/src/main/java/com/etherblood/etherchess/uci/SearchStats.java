@@ -1,19 +1,19 @@
 package com.etherblood.etherchess.uci;
 
 import java.util.List;
-import lombok.Builder;
-import lombok.Getter;
 
-@Builder
-@Getter
-public class SearchStats {
+public record SearchStats(
+        Integer depth,
+        Integer seldepth,
+        Integer scoreCp,
+        Integer scoreMate,
+        Integer hashPermill,
+        Long nodes,
+        Long millis,
+        List<String> pv
+) {
 
-    public Integer depth;
-    public Integer seldepth;
-    public Integer scoreCp;
-    public Integer scoreMate;
-    public Integer hashPermill;
-    public Long nodes;
-    public Long millis;
-    public List<String> pv;
+    public static SearchStatsBuilder builder() {
+        return new SearchStatsBuilder();
+    }
 }

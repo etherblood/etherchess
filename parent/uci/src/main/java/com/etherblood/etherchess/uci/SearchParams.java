@@ -1,22 +1,23 @@
 package com.etherblood.etherchess.uci;
 
 import java.util.List;
-import lombok.Builder;
-import lombok.Getter;
 
-@Builder
-@Getter
-public class SearchParams {
-    private Integer depth;
-    private Long nodes;
-    private Integer mate;
-    private Long millis;
-    private List<String> searchMoves;
-    private boolean infinite;
-    private boolean ponder;
-    private Long whiteClockMillis;
-    private Long blackClockMillis;
-    private Long whiteClockIncrement;
-    private Long blackClockIncrement;
-    private Integer movesToGo;
+public record SearchParams(
+        Integer depth,
+        Long nodes,
+        Integer mate,
+        Long millis,
+        List<String> searchMoves,
+        boolean infinite,
+        boolean ponder,
+        Long whiteClockMillis,
+        Long blackClockMillis,
+        Long whiteClockIncrement,
+        Long blackClockIncrement,
+        Integer movesToGo
+) {
+
+    public static SearchParamsBuilder builder() {
+        return new SearchParamsBuilder();
+    }
 }

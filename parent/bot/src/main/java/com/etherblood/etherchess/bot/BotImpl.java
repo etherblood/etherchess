@@ -10,6 +10,7 @@ import com.etherblood.etherchess.engine.util.LongAlgebraicNotation;
 import com.etherblood.etherchess.engine.util.SquareSet;
 import com.etherblood.etherchess.uci.SearchResult;
 import com.etherblood.etherchess.uci.SearchStats;
+import com.etherblood.etherchess.uci.SearchStatsBuilder;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -79,7 +80,7 @@ public class BotImpl {
                     LOG.warn("move was not stored in table");
                 }
                 long durationNanos = System.nanoTime() - startNanos;
-                SearchStats.SearchStatsBuilder stats = SearchStats.builder();
+                SearchStatsBuilder stats = SearchStats.builder();
                 stats.depth(i);
                 stats.seldepth(selDepth - history.size());
                 stats.millis(durationNanos / 1_000_000);

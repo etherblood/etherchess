@@ -50,12 +50,12 @@ public class UciEngineWrapper implements UciEngine {
     @Override
     public void go(SearchParams params, SearchResult result) {
         BotImpl bot = new BotImpl(table, new PieceSquareEvaluation(), new MoveGenerator());
-        bot.findBest(state, history, params.getDepth(), result);
+        bot.findBest(state, history, params.depth(), result);
     }
 
     @Override
     public void setTableSize(int mib) {
-        long bytes = mib * 1024 * 1024;
+        long bytes = mib * 1024L * 1024L;
         int entryCount = Math.toIntExact(bytes / AlwaysReplaceTable.ENTRY_BYTES);
         long roundedDownToPowerOfTwo = Long.highestOneBit(entryCount);
         table = new AlwaysReplaceTable(Long.numberOfTrailingZeros(roundedDownToPowerOfTwo));

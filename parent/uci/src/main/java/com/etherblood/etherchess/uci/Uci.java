@@ -147,7 +147,7 @@ public class Uci implements Runnable {
     }
 
     private void go(Iterator<String> it) {
-        SearchParams.SearchParamsBuilder builder = SearchParams.builder();
+        SearchParamsBuilder builder = SearchParams.builder();
         switch (it.next()) {
             case "depth":
                 builder.depth(Integer.parseInt(it.next()));
@@ -162,35 +162,35 @@ public class Uci implements Runnable {
                     public void stats(SearchStats stats) {
                         StringBuilder builder = new StringBuilder();
                         builder.append("info");
-                        if (stats.depth != null) {
-                            builder.append(" depth " + stats.depth);
-                            if (stats.seldepth != null) {
-                                builder.append(" seldepth " + stats.seldepth);
+                        if (stats.depth() != null) {
+                            builder.append(" depth " + stats.depth());
+                            if (stats.seldepth() != null) {
+                                builder.append(" seldepth " + stats.seldepth());
                             }
                         }
-                        if (stats.scoreCp != null) {
-                            builder.append(" score cp " + stats.scoreCp);
-                        } else if (stats.scoreMate != null) {
-                            builder.append(" score mate " + stats.scoreMate);
+                        if (stats.scoreCp() != null) {
+                            builder.append(" score cp " + stats.scoreCp());
+                        } else if (stats.scoreMate() != null) {
+                            builder.append(" score mate " + stats.scoreMate());
                         }
-                        if (stats.nodes != null) {
-                            builder.append(" nodes " + stats.nodes);
+                        if (stats.nodes() != null) {
+                            builder.append(" nodes " + stats.nodes());
                         }
-                        if (stats.nodes != null && stats.millis != null && stats.millis > 0) {
-                            builder.append(" nps " + (1000 * stats.nodes / stats.millis));
+                        if (stats.nodes() != null && stats.millis() != null && stats.millis() > 0) {
+                            builder.append(" nps " + (1000 * stats.nodes() / stats.millis()));
                         }
-                        if (stats.pv != null) {
-                            if (stats.millis != null) {
-                                builder.append(" time " + stats.millis);
+                        if (stats.pv() != null) {
+                            if (stats.millis() != null) {
+                                builder.append(" time " + stats.millis());
                             }
                             builder.append(" pv");
-                            for (int i = 0; i < stats.pv.size(); i++) {
+                            for (int i = 0; i < stats.pv().size(); i++) {
                                 builder.append(' ');
-                                builder.append(stats.pv.get(i));
+                                builder.append(stats.pv().get(i));
                             }
                         }
-                        if (stats.hashPermill != null) {
-                            builder.append(" hashfull " + stats.hashPermill);
+                        if (stats.hashPermill() != null) {
+                            builder.append(" hashfull " + stats.hashPermill());
                         }
                         send(builder.toString());
                     }
