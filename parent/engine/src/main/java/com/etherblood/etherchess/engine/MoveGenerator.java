@@ -142,6 +142,7 @@ public class MoveGenerator {
 
     private long findAttackers(State state, int target, long pawnsMask, long attackerMask) {
         long attackers = 0;
+        attackers |= PieceSquareSet.kingMoves(target) & attackerMask & state.kings();
         attackers |= PieceSquareSet.knightMoves(target) & attackerMask & state.knights();
         attackers |= pawnsMask & attackerMask & state.pawns();
         attackers |= PieceSquareSet.rookRays(target, state.occupied()) & attackerMask & (state.rooks() | state.queens());

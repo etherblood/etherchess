@@ -1,33 +1,21 @@
 package com.etherblood.etherchess.engine;
 
 import com.etherblood.etherchess.engine.table.AlwaysReplaceTable;
-import com.etherblood.etherchess.engine.table.TableEntry;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.Scanner;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class PerftTest {
 
-    private final AlwaysReplaceTable table = new AlwaysReplaceTable(24);
-
-    @BeforeEach
-    public void reset() {
-        table.clear();
-    }
+    private final Perft perft = new Perft(new AlwaysReplaceTable(24));
 
     @Test
     public void perftFile() throws IOException {
         // https://github.com/elcabesa/vajolet/blob/master/tests/perft.txt
 
-        int maxPerft = 10_000;// limit count so tests finish reasonably fast
+        long maxPerft = 10_000L;// limit count so tests finish reasonably fast
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("perft.txt")) {
             Scanner scanner = new Scanner(is);
             while (scanner.hasNext()) {
@@ -334,96 +322,6 @@ public class PerftTest {
     }
 
     private void assertPerft(String fen, int depth, long count) {
-        Assertions.assertEquals(count, perft(fen, depth));
-    }
-
-    private long perft(String fen, int depth) {
-        State state = new State(zobrist());
-        FenConverter converter = new FenConverter();
-        converter.fromFen(state, fen);
-        System.out.println(fen);
-        System.out.println(state.toBoardString());
-        long perft = perft(state, depth);
-        System.out.println();
-        return perft;
-    }
-
-    private long perft(State state, int depth) {
-        if (depth == 0) {
-            return 1;
-        }
-        TableEntry entry = new TableEntry();
-        long hash = state.hash();
-        if (table.load(hash, entry) && (entry.raw & 0xff) == depth) {
-            return entry.raw >>> 8;
-        }
-        MoveGenerator moveGen = new MoveGenerator();
-        List<Move> legalMoves = new ArrayList<>();
-        moveGen.generateLegalMoves(state, legalMoves::add);
-        long sum = 0;
-        if (depth == 1) {
-            sum = legalMoves.size();
-        } else {
-            State child = new State(zobrist());
-            for (Move move : legalMoves) {
-                try {
-                    child.copyFrom(state);
-                    move.applyTo(child);
-                    assert moveGen.findOwnCheckers(child) == 0;
-                    sum += perft(child, depth - 1);
-                } catch (AssertionError e) {
-                    System.out.println(move);
-                    throw e;
-                }
-            }
-        }
-        entry.raw = (sum << 8) | depth;
-        table.store(hash, entry);
-        return sum;
-    }
-
-    private Map<Move, Long> divide(String fen, int depth) {
-        State state = new State(zobrist());
-        FenConverter converter = new FenConverter();
-        converter.fromFen(state, fen);
-        System.out.println(fen);
-        System.out.println(state.toBoardString());
-        Map<Move, Long> div = divide(state, depth);
-        System.out.println();
-        return div;
-    }
-
-    private Map<Move, Long> divide(State state, int depth) {
-        if (depth < 1) {
-            throw new IllegalArgumentException();
-        }
-        State child = new State(zobrist());
-        MoveGenerator moveGen = new MoveGenerator();
-        List<Move> legalMoves = new ArrayList<>();
-        moveGen.generateLegalMoves(state, legalMoves::add);
-        legalMoves.sort(Move.defaultComparator());
-        Map<Move, Long> result = new LinkedHashMap<>();
-        if (depth == 1) {
-            for (Move legalMove : legalMoves) {
-                result.put(legalMove, 1L);
-            }
-            return result;
-        }
-        for (Move move : legalMoves) {
-            try {
-                child.copyFrom(state);
-                move.applyTo(child);
-                assert moveGen.findOwnCheckers(child) == 0;
-                result.put(move, perft(child, depth - 1));
-            } catch (AssertionError e) {
-                System.out.println(move);
-                throw e;
-            }
-        }
-        return result;
-    }
-
-    private MirrorZobrist zobrist() {
-        return new MirrorZobrist(new Random(7)::nextLong);
+        Assertions.assertEquals(count, perft.perft(fen, depth));
     }
 }
