@@ -15,7 +15,7 @@ public class PerftTest {
     public void perftFile() throws IOException {
         // https://github.com/elcabesa/vajolet/blob/master/tests/perft.txt
 
-        long maxPerft = 10_000L;// limit count so tests finish reasonably fast
+        long maxCount = 10_000L;// limit count so tests finish reasonably fast
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("perft.txt")) {
             Scanner scanner = new Scanner(is);
             while (scanner.hasNext()) {
@@ -24,9 +24,10 @@ public class PerftTest {
                 for (int depth = 1; depth < parts.length; depth++) {
                     String fen = parts[0];
                     long count = Long.parseLong(parts[depth]);
-                    if (count <= maxPerft) {
-                        assertPerft(fen, depth, count);
+                    if (count > maxCount) {
+                        break;
                     }
+                    assertPerft(fen, depth, count);
                 }
             }
         }
