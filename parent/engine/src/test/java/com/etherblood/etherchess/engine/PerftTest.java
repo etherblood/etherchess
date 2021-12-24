@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 public class PerftTest {
 
-    private final Perft perft = new Perft(new AlwaysReplaceTable(24));
+    private final Perft perft = new Perft(new AlwaysReplaceTable(24), false);
 
     @Test
     public void perftFile() throws IOException {
@@ -33,44 +33,15 @@ public class PerftTest {
     }
 
     @Test
-    public void perft1() {
+    public void peterellisjones() {
         // https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
+
         assertPerft("r6r/1b2k1bq/8/8/7B/8/8/R3K2R b QK - 3 2", 1, 8);
-    }
-
-    @Test
-    public void perft2() {
-        // https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
         assertPerft("8/8/8/2k5/2pP4/8/B7/4K3 b - d3 5 3", 1, 8);
-    }
-
-    @Test
-    public void perft3() {
-        // https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
         assertPerft("r1bqkbnr/pppppppp/n7/8/8/P7/1PPPPPPP/RNBQKBNR w QqKk - 2 2", 1, 19);
-    }
-
-    @Test
-    public void perft4() {
-        // https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
         assertPerft("r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R b QqKk - 3 2", 1, 5);
-    }
-
-    @Test
-    public void perft5() {
-        // https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
         assertPerft("2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R b QK - 3 2", 1, 44);
-    }
-
-    @Test
-    public void perft6() {
-        // https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
         assertPerft("rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R w QK - 3 9", 1, 39);
-    }
-
-    @Test
-    public void perft7() {
-        // https://gist.github.com/peterellisjones/8c46c28141c162d1d8a0f0badbc9cff9
         assertPerft("2r5/3pk3/8/2P5/8/2K5/8/8 w - - 5 4", 1, 9);
     }
 
@@ -322,6 +293,6 @@ public class PerftTest {
     }
 
     private void assertPerft(String fen, int depth, long count) {
-        Assertions.assertEquals(count, perft.perft(fen, depth));
+        Assertions.assertEquals(count, perft.perft(fen, depth), "perft" + depth + "(\"" + fen + "\")");
     }
 }

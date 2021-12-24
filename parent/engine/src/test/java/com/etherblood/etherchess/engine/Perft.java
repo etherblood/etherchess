@@ -11,19 +11,25 @@ import java.util.Random;
 public class Perft {
 
     private final Table table;
+    private final boolean verbose;
 
-    public Perft(Table table) {
+    public Perft(Table table, boolean verbose) {
         this.table = table;
+        this.verbose = verbose;
     }
-    
+
     public long perft(String fen, int depth) {
         State state = new State(zobrist());
         FenConverter converter = new FenConverter();
         converter.fromFen(state, fen);
-        System.out.println(fen);
-        System.out.println(state.toBoardString());
+        if (verbose) {
+            System.out.println(fen);
+            System.out.println(state.toBoardString());
+        }
         long perft = perft(state, depth);
-        System.out.println();
+        if (verbose) {
+            System.out.println();
+        }
         return perft;
     }
 
@@ -65,10 +71,14 @@ public class Perft {
         State state = new State(zobrist());
         FenConverter converter = new FenConverter();
         converter.fromFen(state, fen);
-        System.out.println(fen);
-        System.out.println(state.toBoardString());
+        if (verbose) {
+            System.out.println(fen);
+            System.out.println(state.toBoardString());
+        }
         Map<Move, Long> div = divide(state, depth);
-        System.out.println();
+        if (verbose) {
+            System.out.println();
+        }
         return div;
     }
 
