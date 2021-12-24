@@ -59,14 +59,14 @@ public class LongAlgebraicNotation {
     }
 
     public static String toLanString(boolean isWhite, Move move) {
-        int from = move.from;
-        int to = move.to;
+        int from = move.from();
+        int to = move.to();
         if (!isWhite) {
             from = Square.mirrorY(from);
             to = Square.mirrorY(to);
         }
         String s = Square.toString(from) + Square.toString(to);
-        switch (move.type) {
+        switch (move.type()) {
             case Move.PROMOTION_QUEEN:
                 s += Piece.toString(Piece.QUEEN);
                 break;

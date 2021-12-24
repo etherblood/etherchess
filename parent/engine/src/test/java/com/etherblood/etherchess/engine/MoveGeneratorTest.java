@@ -138,7 +138,7 @@ public class MoveGeneratorTest {
         List<Move> moves = new ArrayList<>();
         MoveGenerator instance = new MoveGenerator();
         instance.generateLegalMoves(state, moves::add);
-        Assertions.assertTrue(moves.stream().noneMatch(move -> move.from == Square.B2));
+        Assertions.assertTrue(moves.stream().noneMatch(move -> move.from() == Square.B2));
     }
 
     @Test
@@ -158,7 +158,7 @@ public class MoveGeneratorTest {
         List<Move> moves = new ArrayList<>();
         MoveGenerator instance = new MoveGenerator();
         instance.generateLegalMoves(state, moves::add);
-        Assertions.assertTrue(moves.stream().noneMatch(move -> move.from == Square.D2));
+        Assertions.assertTrue(moves.stream().noneMatch(move -> move.from() == Square.D2));
     }
 
     @Test
@@ -168,7 +168,7 @@ public class MoveGeneratorTest {
         List<Move> moves = new ArrayList<>();
         MoveGenerator instance = new MoveGenerator();
         instance.generateLegalMoves(state, moves::add);
-        Assertions.assertTrue(moves.stream().noneMatch(move -> move.from == Square.D5 && move.to == Square.E6));
+        Assertions.assertTrue(moves.stream().noneMatch(move -> move.from() == Square.D5 && move.to() == Square.E6));
     }
 
     @Test
@@ -178,7 +178,7 @@ public class MoveGeneratorTest {
         List<Move> moves = new ArrayList<>();
         MoveGenerator instance = new MoveGenerator();
         instance.generateLegalMoves(state, moves::add);
-        Assertions.assertTrue(moves.stream().noneMatch(move -> move.from == Square.D5 && move.to == Square.C6));
+        Assertions.assertTrue(moves.stream().noneMatch(move -> move.from() == Square.D5 && move.to() == Square.C6));
     }
 
     @Test

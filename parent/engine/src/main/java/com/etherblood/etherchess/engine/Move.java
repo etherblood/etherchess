@@ -7,7 +7,12 @@ import com.etherblood.etherchess.engine.util.Square;
 import com.etherblood.etherchess.engine.util.SquareSet;
 import java.util.Comparator;
 
-public class Move {
+public record Move(
+        int type,
+        int piece,
+        int from,
+        int to
+) {
 
     public static final int DEFAULT = 0;
     public static final int DOUBLE = 1;
@@ -18,16 +23,8 @@ public class Move {
     public static final int PROMOTION_KNIGHT = 6;
     public static final int CASTLING = 7;
 
-    public final int type;
-    public final int piece;
-    public final int from;
-    public final int to;
 
-    public Move(int type, int piece, int from, int to) {
-        this.type = type;
-        this.piece = piece;
-        this.from = from;
-        this.to = to;
+    public Move {
         assert Square.isValid(from);
         assert Square.isValid(to);
         assert piece != Piece.EMPTY;
@@ -249,25 +246,6 @@ public class Move {
                 break;
         }
         return s;
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 5;
-        hash = 29 * hash + this.type;
-        hash = 29 * hash + this.piece;
-        hash = 29 * hash + this.from;
-        hash = 29 * hash + this.to;
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof Move)) {
-            return false;
-        }
-        Move other = (Move) obj;
-        return type == other.type && piece == other.piece && from == other.from && to == other.to;
     }
 
     public static Comparator<Move> defaultComparator() {
