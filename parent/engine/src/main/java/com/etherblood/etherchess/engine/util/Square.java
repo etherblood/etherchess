@@ -78,7 +78,7 @@ public class Square {
         // generate code for some of the constants above
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 8; x++) {
-                int square = square(x, y);
+                int square = of(x, y);
                 String name = toString(square).toUpperCase();
                 System.out.println("public static final int " + name + " = " + square + ";");
             }
@@ -116,14 +116,14 @@ public class Square {
         return square >>> 3;
     }
 
-    public static int square(int x, int y) {
+    public static int of(int x, int y) {
         assert (x & 0b111) == x;
         assert (y & 0b111) == y;
         return (y << 3) | x;
     }
 
     public static int parse(String string) {
-        return square(string.charAt(0) - 'a', string.charAt(1) - '1');
+        return of(string.charAt(0) - 'a', string.charAt(1) - '1');
     }
 
     public static boolean isValid(int square) {

@@ -1,7 +1,5 @@
 package com.etherblood.etherchess.engine.util;
 
-import static com.etherblood.etherchess.engine.util.Square.square;
-
 public class SquareSet {
 
     public static final long A1 = 0x1L;
@@ -133,10 +131,10 @@ public class SquareSet {
 
     private static void precomputeRays() {
         for (int square = 0; square < 64; square++) {
-            SOUTHEAST_RAY[square] = antiDiagonalOf(square) & (of(square) - 1);
-            SOUTH_RAY[square] = fileOf(square) & (of(square) - 1);
-            SOUTHWEST_RAY[square] = diagonalOf(square) & (of(square) - 1);
-            WEST_RAY[square] = rankOf(square) & (of(square) - 1);
+            SOUTHEAST_RAY[square] = antiDiagonalOf(square) & lower(square);
+            SOUTH_RAY[square] = fileOf(square) & lower(square);
+            SOUTHWEST_RAY[square] = diagonalOf(square) & lower(square);
+            WEST_RAY[square] = rankOf(square) & lower(square);
         }
         for (int square = 0; square < 64; square++) {
             int reversedSquare = Square.reverse(square);
@@ -151,7 +149,7 @@ public class SquareSet {
         // generate code for some of the constants above
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 8; x++) {
-                int square = square(x, y);
+                int square = Square.of(x, y);
                 String name = Square.toString(square).toUpperCase();
                 System.out.println("public static final long " + name + " = 0x" + Long.toHexString(of(square)) + "L;");
             }
@@ -168,7 +166,7 @@ public class SquareSet {
         }
         long mainDiagonal = 0;
         for (int i = 0; i < 8; i++) {
-            mainDiagonal |= of(Square.square(i, i));
+            mainDiagonal |= of(Square.of(i, i));
         }
         System.out.println("public static final long MAIN_DIAGONAL = 0x" + Long.toHexString(mainDiagonal) + "L;");
         System.out.println("public static final long MAIN_ANTIDIAGONAL = 0x" + Long.toHexString(mirrorY(mainDiagonal)) + "L;");
@@ -220,7 +218,7 @@ public class SquareSet {
         StringBuilder builder = new StringBuilder();
         for (int y = 7; y >= 0; y--) {
             for (int x = 0; x < 8; x++) {
-                int square = Square.square(x, y);
+                int square = Square.of(x, y);
                 long single = SquareSet.of(square);
                 builder.append((squareSet & single) != 0 ? 'X' : '.');
                 if (x < 7) {
@@ -288,5 +286,13 @@ public class SquareSet {
             default:
                 throw new AssertionError(direction);
         }
+    }
+
+    public static long lower(int sq) {
+        return (1L << sq) - 1;
+    }
+
+    public static long upper(int sq) {
+        return (~1L << sq);
     }
 }

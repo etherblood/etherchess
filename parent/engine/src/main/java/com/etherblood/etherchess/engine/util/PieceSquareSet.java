@@ -111,21 +111,33 @@ public class PieceSquareSet {
     }
 
     public static long queenRays(int from, long occupied) {
-        return rookRays(from, occupied) | bishopRays(from, occupied);
+        return rookRays(from, occupied) ^ bishopRays(from, occupied);
     }
 
     public static long rookRays(int square, long occupied) {
-        return northRay(square, occupied)
-                | southRay(square, occupied)
-                | eastRay(square, occupied)
-                | westRay(square, occupied);
+        long file = SquareSet.fileOf(square);
+        long rank = SquareSet.rankOf(square);
+        long lower = SquareSet.lower(square);
+        long upper = SquareSet.upper(square);
+        return lineAttack(lower, upper, file, occupied)
+                ^ lineAttack(lower, upper, rank, occupied);
     }
 
     public static long bishopRays(int square, long occupied) {
-        return northWestRay(square, occupied)
-                | southEastRay(square, occupied)
-                | northEastRay(square, occupied)
-                | southWestRay(square, occupied);
+        long diagonal = SquareSet.diagonalOf(square);
+        long antiDiagonal = SquareSet.antiDiagonalOf(square);
+        long lower = SquareSet.lower(square);
+        long upper = SquareSet.upper(square);
+        return lineAttack(lower, upper, diagonal, occupied)
+                ^ lineAttack(lower, upper, antiDiagonal, occupied);
+    }
+
+    // https://github.com/Gigantua/Chess_Movegen/blob/c52ea218e057ab44440c423f891789abf62396b0/GeneticObstructionDiffV2.hpp#L77
+    private static long lineAttack(long lower, long upper, long line, long occupied) {
+        long lowerOccupiedLine = lower & line & occupied;
+        long upperOccupiedLine = upper & line & occupied;
+        long lowerObstacle = Long.MIN_VALUE >>> Long.numberOfLeadingZeros(lowerOccupiedLine | 1);
+        return line & (upperOccupiedLine ^ (upperOccupiedLine - lowerObstacle));
     }
 
     public static long northRay(int square, long occupied) {

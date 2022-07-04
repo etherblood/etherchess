@@ -175,7 +175,7 @@ public class State {
         StringBuilder builder = new StringBuilder();
         for (int y = 7; y >= 0; y--) {
             for (int x = 0; x < 8; x++) {
-                int square = Square.square(x, y);
+                int square = Square.of(x, y);
                 long single = SquareSet.of(square);
                 int piece = getSquarePiece(square);
                 boolean isOwn = (single & own) != 0;

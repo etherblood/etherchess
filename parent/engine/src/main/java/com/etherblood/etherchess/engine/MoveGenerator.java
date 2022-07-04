@@ -88,7 +88,13 @@ public class MoveGenerator {
         queenMoves(state, sourceMask & state.queens() & ~pinnedMask, pushMask, captureMask, out);
     }
 
+    /***
+     * returns squareSet of king-zone attacked by the opponent, squares outside the king-zone are undefined
+     */
     private long kingDangerSquares(State state) {
+        // is complexity of current implementation worth the performance gain over just using opponent attack masks?
+        // implementation can be optimized by only generating rays in required direction
+
         long ownKings = state.own() & state.kings();
         int ownKingSquare = Square.firstOf(ownKings);
         long occupiedOwnKingExcluded = state.occupied() ^ ownKings;

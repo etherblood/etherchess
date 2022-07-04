@@ -24,7 +24,7 @@ public class FenConverter {
             }
             int empty = 0;
             for (int x = 0; x < 8; x++) {
-                int square = Square.square(x, y);
+                int square = Square.of(x, y);
                 long squareSet = SquareSet.of(square);
                 int piece = state.getSquarePiece(square);
                 if (piece == Piece.EMPTY) {
@@ -134,7 +134,7 @@ public class FenConverter {
             int x = 0;
             for (int i = 0; i < row.length(); i++) {
                 char c = row.charAt(i);
-                int square = Square.square(x, y);
+                int square = Square.of(x, y);
                 switch (c) {
                     case 'p':
                         state.togglePiece(false, Piece.PAWN, square);
